@@ -130,7 +130,21 @@ detect_operating_system()
     # autodetect OS only if it was not explicitly passed via parameter
     if [[ -z ${PERCONA_OPERATING_SYSTEM} ]];
     then
-        PERCONA_OPERATING_SYSTEM="$( ( (grep PRETTY_NAME /etc/os-release ||  cat /etc/*release) | sed 's/PRETTY_NAME=//g;s/\"//g'| head -n1) 2>/dev/null)"
+        if [[ -f /etc/os-release ]]
+        then
+            PERCONA_OPERATING_SYSTEM="$(grep PRETTY_NAME /etc/os-release | sed 's/PRETTY_NAME=//g;s/\"//g')"
+        elif [[ -f /etc/system-release ]];
+        then
+            PERCONA_OPERATING_SYSTEM="$(cat /etc/system-release | sed 's/\"//g'| head -n1)"
+        elif [[ -f /etc/redhat-release ]];
+        then
+            PERCONA_OPERATING_SYSTEM="$(cat /etc/redhat-release | sed 's/\"//g'| head -n1)"
+        elif [[ -f /etc/issue ]];
+        then
+            PERCONA_OPERATING_SYSTEM="$(cat /etc/issue)"
+        fi
+
+        # Fallback to "unknown" if we failed to detect
         if [[ -z ${PERCONA_OPERATING_SYSTEM} ]];
         then
             PERCONA_OPERATING_SYSTEM="unknown"
