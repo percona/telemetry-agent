@@ -195,7 +195,7 @@ mark_product_as_reported()
 collect_data_for_report()
 {
     json_message_map["id"]=$(cat /proc/sys/kernel/random/uuid)
-    json_message_map["createTime"]="$(date --iso-8601='seconds')"
+    json_message_map["createTime"]="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
     json_message_map["instanceId"]=${PERCONA_INSTANCE_ID}
     json_message_map["product_family"]=${PERCONA_PRODUCT_FAMILY}
 
