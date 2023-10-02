@@ -108,19 +108,19 @@ validate_args()
 
     if [[ -z ${PERCONA_PRODUCT_VERSION} ]];
     then
-        printf "PERCONA_PRODUCT_VERSION is not provided. ${USAGE_TEXT}"
+        echo "PERCONA_PRODUCT_VERSION is not provided. ${USAGE_TEXT}"
         usage 1
     fi
 
     if [[ -z ${PERCONA_DEPLOYMENT_METHOD} ]];
     then
-        printf "PERCONA_DEPLOYMENT_METHOD is not provided. ${USAGE_TEXT}"
+        echo "PERCONA_DEPLOYMENT_METHOD is not provided. ${USAGE_TEXT}"
         usage 1
     fi
 
     if [[ -z ${PERCONA_INSTANCE_ID} ]];
     then
-        printf "PERCONA_INSTANCE_ID is not provided. ${USAGE_TEXT}"
+        echo "PERCONA_INSTANCE_ID is not provided. ${USAGE_TEXT}"
         usage 1
     fi
 }
@@ -135,13 +135,14 @@ detect_operating_system()
             PERCONA_OPERATING_SYSTEM="$(grep PRETTY_NAME /etc/os-release | sed 's/PRETTY_NAME=//g;s/\"//g')"
         elif [[ -f /etc/system-release ]];
         then
-            PERCONA_OPERATING_SYSTEM="$(cat /etc/system-release | sed 's/\"//g'| head -n1)"
+            PERCONA_OPERATING_SYSTEM="$(< /etc/system-release sed 's/\"//g'| head -n1)"
         elif [[ -f /etc/redhat-release ]];
         then
-            PERCONA_OPERATING_SYSTEM="$(cat /etc/redhat-release | sed 's/\"//g'| head -n1)"
+            PERCONA_OPERATING_SYSTEM="$(< /etc/redhat-release sed 's/\"//g'| head -n1)"
         elif [[ -f /etc/issue ]];
         then
             PERCONA_OPERATING_SYSTEM="$(cat /etc/issue)"
+            PERCONA_OPERATING_SYSTEM=${PERCONA_OPERATING_SYSTEM//[$'\r\n']}
         fi
 
         # Fallback to "unknown" if we failed to detect
@@ -152,50 +153,55 @@ detect_operating_system()
     fi
 }
 
+# Read k:v from file into telemetry_config_map
 read_telemetry_config_file()
 {
-    while IFS=":" read -r key value;
-    do
-        # Trim possible leading and trailing whitespaces
-        key=$(echo "${key}" | xargs)
-        value=$(echo "${value}" | xargs)
-        telemetry_config_map[${key}]=${value}
-    done < "${PERCONA_TELEMETRY_CONFIG_FILE_PATH}"
+    if [[ -f "${PERCONA_TELEMETRY_CONFIG_FILE_PATH}" ]];
+    then
+        while IFS=":" read -r key value;
+        do
+            # Trim possible leading and trailing whitespaces
+            key=$(echo "${key}" | xargs)
+            value=$(echo "${value}" | xargs)
+            # skip empty keys
+            if [[ -n "${key}" ]];
+            then
+                telemetry_config_map[${key}]=${value}
+            fi
+        done < "${PERCONA_TELEMETRY_CONFIG_FILE_PATH}"
+    fi
 }
 
-# Creates the instance id file if one doesn't exist
-# If instance id file exists, we already reported this instance and there is no more work to do
-check_or_create_percona_instance_id_file()
+# Check telemetry_config_map for:
+# 1. Existance of the valid instanceId
+# 2. If the current product was already reported
+#
+# If the instanceId stored is valid and the product was already reported, exit the script immediately.
+# If the instanceId is not present or is spoiled, generate the new one and force reporting the product.
+check_telemetry_config()
 {
-    local should_create=0
+    local instance_id="${telemetry_config_map["instanceId"]}"
 
-    if [[ ! -f "${PERCONA_TELEMETRY_CONFIG_FILE_PATH}" ]];
+    # If there is no instanceId, or the ID is spoiled, create new ID and force the report
+    if [[ $(echo "${instance_id}" | grep -c "^[0-9a-fA-F]\{8\}-[0-9a-fA-F]\{4\}-[0-9a-fA-F]\{4\}-[0-9a-fA-F]\{4\}-[0-9a-fA-F]\{12\}$") -ne 1 ]];
     then
-        # There is no file at all
-        should_create=1
-    elif [[ $(grep -c "^\s*instanceId\s*:\s*[0-9a-fA-F]\{8\}-[0-9a-fA-F]\{4\}-[0-9a-fA-F]\{4\}-[0-9a-fA-F]\{4\}-[0-9a-fA-F]\{12\}\s*$" "${PERCONA_TELEMETRY_CONFIG_FILE_PATH}") -ne 1 ]];
-    then
-        # There is a file, but does not contain valid instanceId (spoiled?)
-        should_create=1
-    fi
+        # instanceId may be provided via -i cmdline param
+        # If not provided, or provided but not uuid v4, generate new one.
+        if [[ $(echo "${PERCONA_INSTANCE_ID}" | grep -c "^[0-9a-fA-F]\{8\}-[0-9a-fA-F]\{4\}-[0-9a-fA-F]\{4\}-[0-9a-fA-F]\{4\}-[0-9a-fA-F]\{12\}$") -ne 1 ]];
+        then
+            PERCONA_INSTANCE_ID=
+        fi
 
-    if [[ ${should_create} -eq 1 ]];
-    then
-        # If instance ID is not provided externally, generate it
         if [[ -z "${PERCONA_INSTANCE_ID}" ]];
         then
             PERCONA_INSTANCE_ID=$(cat /proc/sys/kernel/random/uuid)
         fi
 
-        # Make sure the storage directory exists
-        mkdir -p "$(dirname "${PERCONA_TELEMETRY_CONFIG_FILE_PATH}")"
-
-        # Truncate the file even if it existed, but was spoiled
-        printf "%s:%s\n" "instanceId" "${PERCONA_INSTANCE_ID}" > "${PERCONA_TELEMETRY_CONFIG_FILE_PATH}"
+        # We have new instanceId, clear the whole config, all products will be reported again with new Id
+        telemetry_config_map=()
+        telemetry_config_map["instanceId"]="${PERCONA_INSTANCE_ID}"
     else
-        # Restore InstanceId and the whole context from the file
-        read_telemetry_config_file
-        PERCONA_INSTANCE_ID=${telemetry_config_map["instanceId"]}
+        PERCONA_INSTANCE_ID="${instance_id}"
     fi
 
     # Check if this product was already reported
@@ -207,10 +213,28 @@ check_or_create_percona_instance_id_file()
     fi
 }
 
+check_if_config_file_writable()
+{
+    # Make sure the storage directory exists
+    mkdir -p "$(dirname "${PERCONA_TELEMETRY_CONFIG_FILE_PATH}")" || return 1
+    # Make sure the config file is writable
+    printf "config_write_check:1\n" >> "${PERCONA_TELEMETRY_CONFIG_FILE_PATH}" || return 1
+}
+
+save_config()
+{
+    # Truncate config file
+    cat /dev/null > "${PERCONA_TELEMETRY_CONFIG_FILE_PATH}"
+    for key in "${!telemetry_config_map[@]}"
+    do
+        printf "%s:%s\n" "${key}" "${telemetry_config_map[${key}]}" >> "${PERCONA_TELEMETRY_CONFIG_FILE_PATH}"
+    done
+}
+
 mark_product_as_reported()
 {
-   # This product hasn't been reported, so mark it as reported by appending ths product
-    printf "%s:%s\n" "${PERCONA_PRODUCT_FAMILY}" "1" >> "${PERCONA_TELEMETRY_CONFIG_FILE_PATH}"
+    telemetry_config_map[${PERCONA_PRODUCT_FAMILY}]="1"
+    save_config    
 }
 
 collect_data_for_report()
@@ -262,7 +286,7 @@ create_json_message()
           # report header
           for key in "${!json_message_map[@]}"
           do
-              m="$(printf "\"%s\" : \"%s\"" "${key}" "${json_message_map[$key]}")"
+              m="$(printf "\"%s\" : \"%s\"" "${key}" "${json_message_map[${key}]}")"
               json_message+="${m},"
           done
 
@@ -279,7 +303,7 @@ create_json_message()
 
                 json_message+="{"
                 m1="$(printf "\"key\" : \"%s\"" "${key}")"
-                m2="$(printf "\"value\" : \"%s\"" "${metrics_map[$key]}")"
+                m2="$(printf "\"value\" : \"%s\"" "${metrics_map[${key}]}")"
                 json_message+="${m1},"
                 json_message+="${m2}"
                 json_message+="}"
@@ -299,7 +323,20 @@ create_json_message()
 
 send_json_message()
 {
-    (curl -X POST --connect-timeout "${PERCONA_SEND_TIMEOUT}" --header 'Content-Type: application/json' --location "${PERCONA_TELEMETRY_URL}" --data "${json_message}") &>/dev/null
+    local http_code
+    local curl_error_code
+    
+    http_code=$(curl -X POST -w "%{http_code}" -o /dev/null -s --connect-timeout "${PERCONA_SEND_TIMEOUT}" --header 'Content-Type: application/json' --location "${PERCONA_TELEMETRY_URL}" --data "${json_message}")
+    curl_error_code=$?
+
+    if [[ ${curl_error_code} -ne 0 ]]; then
+        return 1
+    fi
+    if [[ "${http_code}" -ge 400 ]] && [[ "${http_code}" -lt 600 ]]; then
+        return 1
+    fi
+
+    return 0
 }
 
 # Check options passed in.
@@ -340,7 +377,8 @@ do
     esac
 done
 
-check_or_create_percona_instance_id_file
+read_telemetry_config_file
+check_telemetry_config
 
 detect_operating_system
 
@@ -353,8 +391,13 @@ collect_data_for_report
 create_json_message
 # echo "${json_message}"
 
+check_if_config_file_writable || exit_script 1
+
 # Send the json message
-send_json_message
+if ! send_json_message; then
+    save_config
+    exit_script 1
+fi
 
 mark_product_as_reported
 
