@@ -326,7 +326,7 @@ send_json_message()
     local http_code
     local curl_error_code
     
-    http_code=$(curl -X POST -w "%{http_code}" -o /dev/null -s --connect-timeout "${PERCONA_SEND_TIMEOUT}" --header 'Content-Type: application/json' --location "${PERCONA_TELEMETRY_URL}" --data "${json_message}")
+    http_code=$(curl -X POST -w "%{http_code}" -o /dev/null -s --max-time "${PERCONA_SEND_TIMEOUT}" --header 'Content-Type: application/json' --location "${PERCONA_TELEMETRY_URL}" --data "${json_message}")
     curl_error_code=$?
 
     if [[ ${curl_error_code} -ne 0 ]]; then
