@@ -1,0 +1,10 @@
+---
+coverage:
+  range: "40...60"
+  status:
+    patch:
+      default:
+        threshold: 1
+
+github_checks:
+  annotations: false
