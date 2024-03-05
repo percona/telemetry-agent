@@ -28,7 +28,8 @@ jobs:
     env:
       # no `-mod=readonly` to test PRs made by @dependabot;
       # `git diff --exit-code` step below still checks what we need
-      GOPRIVATE: github.com/percona,github.com/percona-lab
+      GOPRIVATE: github.com/percona,github.com/percona-platform,github.com/percona-lab
+      GONOSUMDB: github.com/percona,github.com/percona-platform,github.com/percona-lab
 
     steps:
       - name: Configure git for private modules
@@ -93,7 +94,8 @@ jobs:
     env:
       # no `-mod=readonly` to test PRs made by @dependabot;
       # `git diff --exit-code` step below still checks what we need
-      GOPRIVATE: github.com/percona,github.com/percona-lab
+      GOPRIVATE: github.com/percona,github.com/percona-platform,github.com/percona-lab
+      GONOSUMDB: github.com/percona,github.com/percona-platform,github.com/percona-lab
 
     steps:
       - name: Configure git for private modules
