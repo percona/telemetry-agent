@@ -50,12 +50,6 @@ jobs:
           pushd tools && go mod download -x
           popd        && go mod download -x
 
-      - name: Start development environment
-        run: make env-up
-
-      - name: Initialize CI environment
-        run: make ci-init
-
       - name: Install development tools
         run: make init
 
@@ -68,15 +62,7 @@ jobs:
       - name: Run tests
         run: |
           go clean -testcache
-          make test-crosscover
-
-      - name: Upload coverage results
-        uses: codecov/codecov-action@v3
-        with:
-          token: ${{ secrets.PLATF_SAAS_CODECOV_TOKEN }}
-          file: crosscover.out
-          flags: crosscover
-          fail_ci_if_error: false
+          make test
 
       - name: Check that there are no source code changes
         run: |

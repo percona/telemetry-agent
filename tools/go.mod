@@ -8,7 +8,6 @@ require (
 	github.com/reviewdog/reviewdog v0.14.2
 	github.com/vektra/mockery/v2 v2.32.0
 	golang.org/x/tools v0.11.0
-	gopkg.in/reform.v1 v1.5.1
 	mvdan.cc/gofumpt v0.5.0
 )
 

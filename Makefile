@@ -5,9 +5,6 @@ help:                   ## Display this help message
 	@grep '^[a-zA-Z]' $(MAKEFILE_LIST) | \
 		awk -F ':.*?## ' 'NF==2 {printf "  %-26s%s\n", $$1, $$2}'
 
-ci-init:                ## Initialize CI environment
-	# nothing there yet
-
 init:                   ## Install development tools
 	cd tools && go generate -x -tags=tools
 
@@ -15,7 +12,6 @@ install:                ## Install binaries
 	go build -race -o bin/telemetry-agent ./cmd/telemetry-agent
 
 gen:                    ## Generate code
-	rm -f models/*_reform.go
 	find . -name mock_*.go -delete
 	go generate ./...
 	make format
