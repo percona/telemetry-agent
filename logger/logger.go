@@ -32,7 +32,7 @@ type GlobalOpts struct {
 func SetupGlobal(opts *GlobalOpts) {
 	// catch the common service initialization problem
 	if opts == nil {
-		opts = new(GlobalOpts)
+		opts = &GlobalOpts{}
 	}
 
 	cfg := &zap.Config{

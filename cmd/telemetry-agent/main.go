@@ -241,7 +241,7 @@ PERCONA_TELEMETRY_HISTORY_KEEP_INTERVAL - define time interval in seconds for ke
 	utils.SignalRunner(
 		func() {
 			checkIntv := time.Duration(conf.TelemetryCheckInterval) * time.Second
-			l.Info(fmt.Sprintf("sleeping for %d seconds before first iteration", checkIntv))
+			l.Info(fmt.Sprintf("sleeping for %d seconds before first iteration", conf.TelemetryCheckInterval))
 
 			ticker := time.NewTicker(checkIntv)
 			for {

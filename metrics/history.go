@@ -1,19 +1,17 @@
-/*
- * // Copyright (C) 2024 Percona LLC
- * //
- * // This program is free software: you can redistribute it and/or modify
- * // it under the terms of the GNU Affero General Public License as published by
- * // the Free Software Foundation, either version 3 of the License, or
- * // (at your option) any later version.
- * //
- * // This program is distributed in the hope that it will be useful,
- * // but WITHOUT ANY WARRANTY; without even the implied warranty of
- * // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * // GNU Affero General Public License for more details.
- * //
- * // You should have received a copy of the GNU Affero General Public License
- * // along with this program. If not, see <https://www.gnu.org/licenses/>.
- */
+// Copyright (C) 2024 Percona LLC
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Affero General Public License for more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 package metrics
 
@@ -34,10 +32,17 @@ import (
 // Percona Platform telemetry request into it. Content is written using JSON format.
 func WriteMetricsToHistory(historyFile string, platformReport *platformReporter.ReportRequest) error {
 	l := zap.L().Sugar()
-	if len(platformReport.Reports) == 0 {
+	if platformReport == nil || len(platformReport.Reports) == 0 {
 		l.Errorw("attempt to write invalid Percona Platform report into history file",
 			zap.Any("report", platformReport))
 		return errors.New("invalid telemetry report, ReportRequest.Reports is empty")
+	}
+
+	cleanFilePath := filepath.Clean(historyFile)
+	// check that directory exists
+	dirPath := filepath.Dir(cleanFilePath)
+	if err := validateDirectory(dirPath); err != nil {
+		return errors.Wrap(err, "can't read directory with history metric files")
 	}
 
 	// Marshal the message to pretty JSON
@@ -48,8 +53,8 @@ func WriteMetricsToHistory(historyFile string, platformReport *platformReporter.
 		return errors.Wrap(err, "can't marshal report into JSON")
 	}
 
-	if err := os.WriteFile(filepath.Clean(historyFile), jsonBytes, 0o600); err != nil {
-		l.Errorw("failed to write file",
+	if err := os.WriteFile(cleanFilePath, jsonBytes, 0o600); err != nil {
+		l.Errorw("failed to write history file",
 			zap.String("file", historyFile),
 			zap.Error(err))
 		return errors.Wrap(err, "can't write history file")
@@ -59,11 +64,16 @@ func WriteMetricsToHistory(historyFile string, platformReport *platformReporter.
 
 // CleanupMetricsHistory removes all telemetry files from history directory that are older than threshold.
 // File creation time is taken from file name - it contains unixtime in format:
-// <unixtime>.json.
-func CleanupMetricsHistory(historyPath string, keepInterval int) error {
+// <unixtime>-<random token>.json.
+func CleanupMetricsHistory(historyDirectoryPath string, keepInterval int) error {
 	l := zap.L().Sugar()
 
-	cleanHistoryPath := filepath.Clean(historyPath)
+	cleanHistoryPath := filepath.Clean(historyDirectoryPath)
+	// check that directory exists
+	if err := validateDirectory(cleanHistoryPath); err != nil {
+		return errors.Wrap(err, "can't read directory with history metric files")
+	}
+
 	files, err := os.ReadDir(cleanHistoryPath)
 	if err != nil {
 		return errors.Wrap(err, "can't read directory with history metric files")
@@ -79,7 +89,9 @@ func CleanupMetricsHistory(historyPath string, keepInterval int) error {
 			continue
 		}
 
-		fileCreationTime, err := strconv.Atoi(strings.TrimSuffix(file.Name(), fileExt))
+		fileCreationTime, err := strconv.Atoi(strings.Split(
+			strings.TrimSuffix(filepath.Base(file.Name()), fileExt),
+			"-")[0])
 		if err != nil {
 			fl.Warnw("can't convert filename into int, skipping", zap.Error(err))
 			continue
@@ -98,6 +110,17 @@ func CleanupMetricsHistory(historyPath string, keepInterval int) error {
 			fl.Errorw("error removing metric file, skipping", zap.Error(err))
 			continue
 		}
+	}
+	return nil
+}
+
+func validateDirectory(dirPath string) error {
+	info, err := os.Stat(dirPath)
+	if os.IsNotExist(err) {
+		return err
+	}
+	if !info.IsDir() {
+		return errors.New("provided path is not a directory")
 	}
 	return nil
 }

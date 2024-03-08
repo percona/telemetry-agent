@@ -51,12 +51,11 @@ func InitConfig() Config {
 
 	pillarMetricsRootPathVarName := "root_path"
 
-	pillarMetricsRootPathDefault := filepath.Join("/usr", "local", "percona", "telemetry")
 	err = viper.BindEnv(pillarMetricsRootPathVarName)
 	if err != nil {
 		panic(err)
 	}
-	viper.SetDefault(pillarMetricsRootPathVarName, pillarMetricsRootPathDefault)
+	viper.SetDefault(pillarMetricsRootPathVarName, filepath.Join("/usr", "local", "percona", "telemetry"))
 	telemetryRootPath := viper.GetString(pillarMetricsRootPathVarName)
 
 	telemetryCheckIntervalVarName := "check_interval"
