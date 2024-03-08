@@ -22,7 +22,7 @@ import (
 	"strings"
 	"time"
 
-	platformReporter "github.com/percona-platform/platform/gen/telemetry/generic"
+	platformReporter "github.com/percona-platform/saas/gen/telemetry/generic"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/encoding/protojson"

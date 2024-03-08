@@ -16,7 +16,7 @@
 package metrics
 
 import (
-	platformReporter "github.com/percona-platform/platform/gen/telemetry/generic"
+	platformReporter "github.com/percona-platform/saas/gen/telemetry/generic"
 )
 
 // ProcessPSMetrics processes PS metrics and returns slice of *File.

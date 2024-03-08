@@ -20,7 +20,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	platformReporter "github.com/percona-platform/platform/gen/telemetry/generic"
+	platformReporter "github.com/percona-platform/saas/gen/telemetry/generic"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/encoding/protojson"
 )

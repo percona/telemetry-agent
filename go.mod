@@ -3,9 +3,10 @@ module github.com/percona-lab/telemetry-agent
 go 1.21
 
 require (
+	github.com/go-resty/resty/v2 v2.11.0
 	github.com/google/uuid v1.6.0
 	github.com/matishsiao/goInfo v0.0.0-20210923090445-da2e3fa8d45f
-	github.com/percona-platform/platform v0.0.0-20240304095908-d7a704d7b375
+	github.com/percona-platform/saas v0.0.0-20240308130156-13e84c49f33d
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/viper v1.18.2
 	github.com/stretchr/testify v1.8.4
@@ -18,7 +19,6 @@ require (
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
-	github.com/go-resty/resty/v2 v2.11.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.19.1 // indirect

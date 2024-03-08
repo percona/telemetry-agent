@@ -27,12 +27,13 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	platformReporter "github.com/percona-platform/platform/gen/telemetry/generic"
-	platformClient "github.com/percona-platform/platform/pkg/client"
-	platformLogger "github.com/percona-platform/platform/pkg/logger"
+	platformReporter "github.com/percona-platform/saas/gen/telemetry/generic"
+	platformLogger "github.com/percona-platform/saas/pkg/logger"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	platformClient "github.com/percona-lab/telemetry-agent/platform"
 
 	"github.com/percona-lab/telemetry-agent/config"
 	"github.com/percona-lab/telemetry-agent/logger"

@@ -12,7 +12,6 @@ install:                ## Install binaries
 	go build -race -o bin/telemetry-agent ./cmd/telemetry-agent
 
 gen:                    ## Generate code
-	find . -name mock_*.go -delete
 	go generate ./...
 	make format
 
