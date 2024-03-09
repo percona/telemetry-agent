@@ -16,6 +16,8 @@
 package metrics
 
 import (
+	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -23,7 +25,6 @@ import (
 	"time"
 
 	platformReporter "github.com/percona-platform/saas/gen/telemetry/generic"
-	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/encoding/protojson"
 )
@@ -35,14 +36,14 @@ func WriteMetricsToHistory(historyFile string, platformReport *platformReporter.
 	if platformReport == nil || len(platformReport.Reports) == 0 {
 		l.Errorw("attempt to write invalid Percona Platform report into history file",
 			zap.Any("report", platformReport))
-		return errors.New("invalid telemetry report, ReportRequest.Reports is empty")
+		return errors.New("invalid Percona Platform report, ReportRequest.Reports is empty")
 	}
 
 	cleanFilePath := filepath.Clean(historyFile)
 	// check that directory exists
 	dirPath := filepath.Dir(cleanFilePath)
 	if err := validateDirectory(dirPath); err != nil {
-		return errors.Wrap(err, "can't read directory with history metric files")
+		return fmt.Errorf("can't read directory with history metric files: %w", err)
 	}
 
 	// Marshal the message to pretty JSON
@@ -50,14 +51,14 @@ func WriteMetricsToHistory(historyFile string, platformReport *platformReporter.
 	jsonBytes, err := marshalOpts.Marshal(platformReport)
 	if err != nil {
 		l.Errorw("failed to marshal Percona Platform report into JSON", zap.Error(err))
-		return errors.Wrap(err, "can't marshal report into JSON")
+		return fmt.Errorf("can't marshal Percona Platform report into JSON: %w", err)
 	}
 
 	if err := os.WriteFile(cleanFilePath, jsonBytes, 0o600); err != nil {
 		l.Errorw("failed to write history file",
 			zap.String("file", historyFile),
 			zap.Error(err))
-		return errors.Wrap(err, "can't write history file")
+		return fmt.Errorf("can't write history file: %w", err)
 	}
 	return nil
 }
@@ -71,12 +72,12 @@ func CleanupMetricsHistory(historyDirectoryPath string, keepInterval int) error 
 	cleanHistoryPath := filepath.Clean(historyDirectoryPath)
 	// check that directory exists
 	if err := validateDirectory(cleanHistoryPath); err != nil {
-		return errors.Wrap(err, "can't read directory with history metric files")
+		return fmt.Errorf("can't read directory with history metrics files: %w", err)
 	}
 
 	files, err := os.ReadDir(cleanHistoryPath)
 	if err != nil {
-		return errors.Wrap(err, "can't read directory with history metric files")
+		return fmt.Errorf("can't read directory with history metrics files: %w", err)
 	}
 
 	timeThreshold := time.Now().Add(-time.Duration(keepInterval) * time.Second)
@@ -120,7 +121,7 @@ func validateDirectory(dirPath string) error {
 		return err
 	}
 	if !info.IsDir() {
-		return errors.New("provided path is not a directory")
+		return fmt.Errorf("provided path is not a directory")
 	}
 	return nil
 }

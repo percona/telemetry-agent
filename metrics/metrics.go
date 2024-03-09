@@ -18,6 +18,8 @@ package metrics
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -25,7 +27,6 @@ import (
 	"time"
 
 	platformReporter "github.com/percona-platform/saas/gen/telemetry/generic"
-	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
 
@@ -53,7 +54,7 @@ func processMetricsDirectory(path string, productFamily platformReporter.Product
 		l.Errorw("failed to read pillar metric directory",
 			zap.String("directory", cleanMetricsDirectoryPath),
 			zap.Error(err))
-		return nil, errors.Wrap(err, "can't read directory with metric files")
+		return nil, fmt.Errorf("can't read directory with metric files: %w", err)
 	}
 
 	if len(files) == 0 {

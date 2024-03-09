@@ -18,6 +18,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	url2 "net/url"
@@ -29,7 +30,6 @@ import (
 	"github.com/google/uuid"
 	platformReporter "github.com/percona-platform/saas/gen/telemetry/generic"
 	platformLogger "github.com/percona-platform/saas/pkg/logger"
-	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -60,10 +60,10 @@ func createTelemetryDirs(c config.Config) error {
 func createPerconaPlatformClient(c config.Config) (*platformClient.Client, error) {
 	u, err := url2.ParseRequestURI(c.PerconaTelemetryURL)
 	if err != nil {
-		return nil, errors.Wrap(err, "can't create Percona Platform client")
+		return nil, fmt.Errorf("can't create Percona Platform client: %w", err)
 	}
 	if u.Scheme == "" || u.Host == "" {
-		return nil, errors.New("Percona Platform Telemetry URL is invalid: scheme or host is missed")
+		return nil, errors.New("invalid Percona Platform Telemetry URL: scheme or host is missed")
 	}
 
 	return platformClient.New(

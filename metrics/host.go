@@ -17,6 +17,7 @@ package metrics
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -25,7 +26,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/matishsiao/goInfo"
-	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
 
@@ -40,7 +40,7 @@ const (
 func ScrapeHostMetrics() (*File, error) {
 	instanceID, err := getInstanceID(telemetryFile)
 	if err != nil {
-		return nil, errors.Wrap(err, "can't get Percona telemetry instanceID")
+		return nil, fmt.Errorf("can't get Percona telemetry instanceID: %w", err)
 	}
 	m := &File{
 		Timestamp: time.Now(),

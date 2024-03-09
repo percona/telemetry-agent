@@ -7,7 +7,6 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/matishsiao/goInfo v0.0.0-20210923090445-da2e3fa8d45f
 	github.com/percona-platform/saas v0.0.0-20240308130156-13e84c49f33d
-	github.com/pkg/errors v0.9.1
 	github.com/spf13/viper v1.18.2
 	github.com/stretchr/testify v1.8.4
 	go.uber.org/zap v1.27.0

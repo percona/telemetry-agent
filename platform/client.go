@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -28,7 +29,6 @@ import (
 
 	"github.com/go-resty/resty/v2"
 	genericv1 "github.com/percona-platform/saas/gen/telemetry/generic"
-	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/percona-platform/saas/pkg/logger"
@@ -163,7 +163,7 @@ func (c *Client) SendTelemetry(ctx context.Context, accessToken string, report *
 
 	err = c.sendPostRequest(ctx, path, accessToken, bytes.NewReader(body), nil)
 	if err != nil {
-		return errors.Wrap(err, "failed to send telemetry data")
+		return fmt.Errorf("failed to send telemetry data: %w", err)
 	}
 
 	return nil
@@ -232,7 +232,7 @@ func (c *Client) createRequest(ctx context.Context) *resty.Request {
 
 func checkForError(resp *resty.Response, err error) error {
 	if err != nil {
-		return errors.Wrap(err, "internal error")
+		return fmt.Errorf("internal error: %w", err)
 	}
 
 	if resp == nil {
