@@ -30,9 +30,7 @@ func SignalRunner(runner, stopper func()) {
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
 
-	go func() {
-		runner()
-	}()
+	go runner()
 
 	s := <-signals
 	zap.L().Sugar().Infof("Received signal: %s, shutdown", s)

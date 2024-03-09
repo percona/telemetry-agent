@@ -21,7 +21,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	url2 "net/url"
+	"net/url"
 	"os"
 	"path/filepath"
 	"sync"
@@ -58,7 +58,7 @@ func createTelemetryDirs(c config.Config) error {
 
 // Create Percona Platform HTTP client for sending telemetry reports.
 func createPerconaPlatformClient(c config.Config) (*platformClient.Client, error) {
-	u, err := url2.ParseRequestURI(c.PerconaTelemetryURL)
+	u, err := url.ParseRequestURI(c.PerconaTelemetryURL)
 	if err != nil {
 		return nil, fmt.Errorf("can't create Percona Platform client: %w", err)
 	}
@@ -119,9 +119,9 @@ func processMetrics(ctx context.Context, c config.Config, platformClient *platfo
 		l.Errorw("failed to scrape host metrics", zap.Error(err))
 		return err
 	}
-	hostInstanceID := hostMetrics.Metrics["instanceId"]
+	hostInstanceID := hostMetrics.Metrics[metrics.InstanceIDKey]
 	// instanceId is not needed in main metrics set
-	delete(hostMetrics.Metrics, "instanceId")
+	delete(hostMetrics.Metrics, metrics.InstanceIDKey)
 
 	pillarMetrics := processPillarsMetrics(c)
 	for _, pillarM := range pillarMetrics {
@@ -242,7 +242,7 @@ PERCONA_TELEMETRY_HISTORY_KEEP_INTERVAL - define time interval in seconds for ke
 	utils.SignalRunner(
 		func() {
 			checkIntv := time.Duration(conf.TelemetryCheckInterval) * time.Second
-			l.Info(fmt.Sprintf("sleeping for %d seconds before first iteration", conf.TelemetryCheckInterval))
+			l.Infof("sleeping for %d seconds before first iteration", conf.TelemetryCheckInterval)
 
 			ticker := time.NewTicker(checkIntv)
 			for {

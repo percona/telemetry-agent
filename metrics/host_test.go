@@ -93,7 +93,7 @@ func TestGetInstanceID(t *testing.T) { //nolint:tparallel
 			name: "file_presents_single_line",
 			setupTestData: func(t *testing.T, tmpDir, instanceFile, instanceID string) {
 				t.Helper()
-				err := os.WriteFile(filepath.Join(tmpDir, instanceFile), []byte(fmt.Sprintf("%s: %s", instanceIDKey, instanceID)), 0o600)
+				err := os.WriteFile(filepath.Join(tmpDir, instanceFile), []byte(fmt.Sprintf("%s: %s", InstanceIDKey, instanceID)), 0o600)
 				require.NoError(t, err)
 			},
 			postCheckTestData: func(t *testing.T, tmpDir, instanceFile string) {
@@ -108,7 +108,7 @@ func TestGetInstanceID(t *testing.T) { //nolint:tparallel
 			name: "file_presents_multi_lines",
 			setupTestData: func(t *testing.T, tmpDir, instanceFile, instanceID string) {
 				t.Helper()
-				data := fmt.Sprintf("PRODUCT_FAMILY_PS: 1\nPRODUCT_FAMILY_PXC: 1\nPRODUCT_FAMILY_PSMDB: 1\n%s: %s", instanceIDKey, instanceID)
+				data := fmt.Sprintf("PRODUCT_FAMILY_PS: 1\nPRODUCT_FAMILY_PXC: 1\nPRODUCT_FAMILY_PSMDB: 1\n%s: %s", InstanceIDKey, instanceID)
 				err := os.WriteFile(filepath.Join(tmpDir, instanceFile), []byte(data), 0o600)
 				require.NoError(t, err)
 			},

@@ -42,14 +42,12 @@ type File struct {
 func processMetricsDirectory(path string, productFamily platformReporter.ProductFamily) ([]*File, error) {
 	l := zap.L().Sugar()
 
-	toReturn := make([]*File, 0, 5)
-
 	cleanMetricsDirectoryPath := filepath.Clean(path)
 	files, err := os.ReadDir(cleanMetricsDirectoryPath)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			l.Infow("pillar metric directory is absent, skipping", zap.String("directory", cleanMetricsDirectoryPath))
-			return toReturn, nil
+			return nil, nil
 		}
 		l.Errorw("failed to read pillar metric directory",
 			zap.String("directory", cleanMetricsDirectoryPath),
@@ -59,9 +57,10 @@ func processMetricsDirectory(path string, productFamily platformReporter.Product
 
 	if len(files) == 0 {
 		l.Infow("pillar metric directory is empty, skipping", zap.String("directory", cleanMetricsDirectoryPath))
-		return toReturn, nil
+		return nil, nil
 	}
 
+	toReturn := make([]*File, 0, 1)
 	for _, file := range files {
 		fileName := filepath.Join(cleanMetricsDirectoryPath, file.Name())
 		fl := l.With(zap.String("file", fileName))
@@ -87,25 +86,25 @@ func processMetricsDirectory(path string, productFamily platformReporter.Product
 
 func parseMetricsFile(path string) (*File, error) {
 	cleanPath := filepath.Clean(path)
-	fl := zap.L().Sugar().With(zap.String("file", cleanPath))
+	l := zap.L().Sugar().With(zap.String("file", cleanPath))
 
 	file, err := os.Open(cleanPath)
 	if err != nil {
-		fl.Errorw("error during opening metrics file", zap.Error(err))
+		l.Errorw("error during opening metrics file", zap.Error(err))
 		return nil, err
 	}
-	defer func(file *os.File, fl *zap.SugaredLogger) {
+	defer func() {
 		err := file.Close()
 		if err != nil {
-			fl.Errorw("error during closing metrics file", zap.Error(err))
+			l.Warnw("error during closing metrics file", zap.Error(err))
 		}
-	}(file, fl)
+	}()
 
 	// file has content in JSON format but the structure is not well known beforehand.
 	var tmpMetrics map[string]interface{}
 	err = json.NewDecoder(file).Decode(&tmpMetrics)
 	if err != nil {
-		fl.Errorw("error during parsing metrics file, skipping", zap.Error(err))
+		l.Errorw("error during parsing metrics file, skipping", zap.Error(err))
 		return nil, err
 	}
 
@@ -114,7 +113,7 @@ func parseMetricsFile(path string) (*File, error) {
 	for k, v := range tmpMetrics {
 		s, err := json.Marshal(v)
 		if err != nil {
-			fl.Errorw("error during marshalling metric value to JSON, skipping",
+			l.Errorw("error during marshalling metric value to JSON, skipping",
 				zap.Any("value", v),
 				zap.Error(err))
 			return nil, err
@@ -128,7 +127,7 @@ func parseMetricsFile(path string) (*File, error) {
 		strings.TrimSuffix(filepath.Base(file.Name()), filepath.Ext(file.Name())),
 		"-")[0])
 	if err != nil {
-		fl.Errorw("can't convert filename into int, skipping", zap.Error(err))
+		l.Errorw("can't convert filename into int, skipping", zap.Error(err))
 		return nil, err
 	}
 

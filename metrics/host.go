@@ -31,8 +31,8 @@ import (
 
 const (
 	telemetryFile = "/usr/local/percona/telemetry_uuid"
-	// key name in telemetryFile with host instance ID.
-	instanceIDKey = "instanceId"
+	// InstanceIDKey key name in telemetryFile with host instance ID.
+	InstanceIDKey = "instanceId"
 )
 
 // ScrapeHostMetrics gathers metrics about host where Telemetry Agent is running.
@@ -47,7 +47,7 @@ func ScrapeHostMetrics() (*File, error) {
 		Filename:  telemetryFile,
 	}
 	m.Metrics = make(map[string]string)
-	m.Metrics[instanceIDKey] = instanceID
+	m.Metrics[InstanceIDKey] = instanceID
 
 	m.Metrics["OS"] = getOSInfo()
 	m.Metrics["deployment"] = getDeploymentInfo()
@@ -127,7 +127,7 @@ func getInstanceID(instanceFile string) (string, error) { //nolint:cyclop
 	scanner := bufio.NewScanner(file)
 	scanner.Split(customSplitFunc)
 	for scanner.Scan() {
-		if parts := strings.Split(scanner.Text(), ":"); len(parts) == 2 && parts[0] == instanceIDKey {
+		if parts := strings.Split(scanner.Text(), ":"); len(parts) == 2 && parts[0] == InstanceIDKey {
 			instanceID = strings.TrimSpace(parts[1])
 			break
 		}
@@ -141,7 +141,7 @@ func getInstanceID(instanceFile string) (string, error) { //nolint:cyclop
 
 func createTelemetryFile(instanceFile string) (string, error) {
 	instanceID := uuid.New().String()
-	if err := os.WriteFile(instanceFile, []byte(fmt.Sprintf("%s: %s", instanceIDKey, instanceID)), 0o600); err != nil {
+	if err := os.WriteFile(instanceFile, []byte(fmt.Sprintf("%s: %s", InstanceIDKey, instanceID)), 0o600); err != nil {
 		zap.L().Sugar().With(zap.String("file", instanceFile)).
 			Errorw("failed to write Percona telemetry file", zap.Error(err))
 		return "", err
@@ -150,7 +150,6 @@ func createTelemetryFile(instanceFile string) (string, error) {
 }
 
 func getDeploymentInfo() string {
-	// TODO: determine environment
 	return "PACKAGE"
 }
 

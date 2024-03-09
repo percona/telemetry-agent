@@ -23,7 +23,11 @@ import (
 )
 
 const (
-	perconaTelemetryEnvPrefix      = "PERCONA_TELEMETRY"
+	telemetryRootPath              = "PERCONA_TELEMETRY_ROOT_PATH"
+	telemetryCheckInterval         = "PERCONA_TELEMETRY_CHECK_INTERVAL"
+	telemetryResendInterval        = "PERCONA_TELEMETRY_RESEND_INTERVAL"
+	telemetryHistoryKeepInterval   = "PERCONA_TELEMETRY_HISTORY_KEEP_INTERVAL"
+	telemetryURL                   = "PERCONA_TELEMETRY_URL"
 	telemetryCheckIntervalDefault  = 24 * 60 * 60     // seconds
 	telemetryResendIntervalDefault = 60               // seconds
 	historyKeepIntervalDefault     = 7 * 24 * 60 * 60 // 7d
@@ -46,55 +50,33 @@ type Config struct {
 // InitConfig parses Telemetry Agent configuration parameters.
 // If some parameters are not defined - default values are used instead.
 func InitConfig() Config {
-	viper.SetEnvPrefix(perconaTelemetryEnvPrefix)
-	var err error
+	// viper.SetEnvPrefix(perconaTelemetryEnvPrefix)
 
-	pillarMetricsRootPathVarName := "root_path"
+	viper.MustBindEnv(telemetryRootPath)
+	viper.SetDefault(telemetryRootPath, filepath.Join("/usr", "local", "percona", "telemetry"))
+	rootPathValue := viper.GetString(telemetryRootPath)
 
-	err = viper.BindEnv(pillarMetricsRootPathVarName)
-	if err != nil {
-		panic(err)
-	}
-	viper.SetDefault(pillarMetricsRootPathVarName, filepath.Join("/usr", "local", "percona", "telemetry"))
-	telemetryRootPath := viper.GetString(pillarMetricsRootPathVarName)
+	viper.MustBindEnv(telemetryCheckInterval)
+	viper.SetDefault(telemetryCheckInterval, telemetryCheckIntervalDefault)
 
-	telemetryCheckIntervalVarName := "check_interval"
-	err = viper.BindEnv(telemetryCheckIntervalVarName)
-	if err != nil {
-		panic(err)
-	}
-	viper.SetDefault(telemetryCheckIntervalVarName, telemetryCheckIntervalDefault)
+	viper.MustBindEnv(telemetryResendInterval)
+	viper.SetDefault(telemetryResendInterval, telemetryResendIntervalDefault)
 
-	telemetryResendIntervalVarName := "resend_interval"
-	err = viper.BindEnv(telemetryResendIntervalVarName)
-	if err != nil {
-		panic(err)
-	}
-	viper.SetDefault(telemetryResendIntervalVarName, telemetryResendIntervalDefault)
+	viper.MustBindEnv(telemetryHistoryKeepInterval)
+	viper.SetDefault(telemetryHistoryKeepInterval, historyKeepIntervalDefault)
 
-	historyKeepIntervalVarName := "history_keep_interval"
-	err = viper.BindEnv(historyKeepIntervalVarName)
-	if err != nil {
-		panic(err)
-	}
-	viper.SetDefault(historyKeepIntervalVarName, historyKeepIntervalDefault)
-
-	telemetryURLVarName := "url"
-	err = viper.BindEnv(telemetryURLVarName)
-	if err != nil {
-		panic(err)
-	}
-	viper.SetDefault(telemetryURLVarName, perconaTelemetryURLDefault)
+	viper.MustBindEnv(telemetryURL)
+	viper.SetDefault(telemetryURL, perconaTelemetryURLDefault)
 
 	return Config{
-		PSMetricsPath:                filepath.Join(telemetryRootPath, "ps"),
-		PSMDBMetricsPath:             filepath.Join(telemetryRootPath, "psmdb"),
-		PXCMetricsPath:               filepath.Join(telemetryRootPath, "pxc"),
-		PGMetricsPath:                filepath.Join(telemetryRootPath, "pg"),
-		TelemetryCheckInterval:       viper.GetInt(telemetryCheckIntervalVarName),
-		TelemetryHistoryPath:         filepath.Join(telemetryRootPath, "history"),
-		TelemetryResendTimeout:       viper.GetInt(telemetryResendIntervalVarName),
-		TelemetryHistoryKeepInterval: viper.GetInt(historyKeepIntervalVarName),
-		PerconaTelemetryURL:          viper.GetString(telemetryURLVarName),
+		PSMetricsPath:                filepath.Join(rootPathValue, "ps"),
+		PSMDBMetricsPath:             filepath.Join(rootPathValue, "psmdb"),
+		PXCMetricsPath:               filepath.Join(rootPathValue, "pxc"),
+		PGMetricsPath:                filepath.Join(rootPathValue, "pg"),
+		TelemetryCheckInterval:       viper.GetInt(telemetryCheckInterval),
+		TelemetryHistoryPath:         filepath.Join(rootPathValue, "history"),
+		TelemetryResendTimeout:       viper.GetInt(telemetryResendInterval),
+		TelemetryHistoryKeepInterval: viper.GetInt(telemetryHistoryKeepInterval),
+		PerconaTelemetryURL:          viper.GetString(telemetryURL),
 	}
 }

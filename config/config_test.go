@@ -16,7 +16,6 @@
 package config
 
 import (
-	"fmt"
 	"path/filepath"
 	"strconv"
 	"testing"
@@ -53,11 +52,11 @@ func TestInitConfig(t *testing.T) { //nolint:paralleltest
 			setupTestData: func(t *testing.T) {
 				t.Helper()
 
-				t.Setenv(fmt.Sprintf("%s_ROOT_PATH", perconaTelemetryEnvPrefix), "/tmp/percona")
-				t.Setenv(fmt.Sprintf("%s_CHECK_INTERVAL", perconaTelemetryEnvPrefix), strconv.Itoa(telemetryCheckIntervalDefault*2))
-				t.Setenv(fmt.Sprintf("%s_RESEND_INTERVAL", perconaTelemetryEnvPrefix), strconv.Itoa(telemetryResendIntervalDefault*3))
-				t.Setenv(fmt.Sprintf("%s_HISTORY_KEEP_INTERVAL", perconaTelemetryEnvPrefix), strconv.Itoa(historyKeepIntervalDefault*4))
-				t.Setenv(fmt.Sprintf("%s_URL", perconaTelemetryEnvPrefix), "https://check.percona.com/v1/telemetry/GenericReport2")
+				t.Setenv(telemetryRootPath, "/tmp/percona")
+				t.Setenv(telemetryCheckInterval, strconv.Itoa(telemetryCheckIntervalDefault*2))
+				t.Setenv(telemetryResendInterval, strconv.Itoa(telemetryResendIntervalDefault*3))
+				t.Setenv(telemetryHistoryKeepInterval, strconv.Itoa(historyKeepIntervalDefault*4))
+				t.Setenv(telemetryURL, "https://check.percona.com/v1/telemetry/GenericReport2")
 			},
 			expectedConfig: Config{
 				PSMetricsPath:                filepath.Join("/tmp", "percona", "ps"),
@@ -76,9 +75,9 @@ func TestInitConfig(t *testing.T) { //nolint:paralleltest
 			setupTestData: func(t *testing.T) {
 				t.Helper()
 
-				t.Setenv(fmt.Sprintf("%s_CHECK_INTERVAL", perconaTelemetryEnvPrefix), strconv.Itoa(telemetryCheckIntervalDefault*2))
-				t.Setenv(fmt.Sprintf("%s_RESEND_INTERVAL", perconaTelemetryEnvPrefix), strconv.Itoa(telemetryResendIntervalDefault*3))
-				t.Setenv(fmt.Sprintf("%s_URL", perconaTelemetryEnvPrefix), "https://check-dev.percona.com/v1/telemetry/GenericReport2")
+				t.Setenv(telemetryCheckInterval, strconv.Itoa(telemetryCheckIntervalDefault*2))
+				t.Setenv(telemetryResendInterval, strconv.Itoa(telemetryResendIntervalDefault*3))
+				t.Setenv(telemetryURL, "https://check-dev.percona.com/v1/telemetry/GenericReport2")
 			},
 			expectedConfig: Config{
 				PSMetricsPath:                filepath.Join("/usr", "local", "percona", "telemetry", "ps"),
@@ -94,7 +93,6 @@ func TestInitConfig(t *testing.T) { //nolint:paralleltest
 		},
 	}
 
-	viper.SetEnvPrefix(perconaTelemetryEnvPrefix)
 	for _, tt := range testCases { //nolint:paralleltest
 		t.Run(tt.name, func(t *testing.T) {
 			// resetting viper environment variables
