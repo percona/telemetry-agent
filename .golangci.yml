@@ -1,0 +1,47 @@
+---
+# Almost all linters; some of them are optional.
+
+linters-settings:
+  depguard:
+    rules:
+      main:
+        deny:
+          - pkg: github.com/pkg/errors
+            desc: Use "standard errors" instead
+
+  goimports:
+    local-prefixes: github.com/percona-lab/telemetry-agent
+
+  unparam:
+    check-exported: true
+
+linters:
+  enable-all: true
+  disable:
+    - exhaustivestruct # too annoying
+    - gci              # works poorly
+    - goerr113         # we use pkg/errors for stack traces
+    - golint           # deprecated
+    - gomnd            # too annoying
+    - interfacer       # deprecated
+    - lll              # gRPC types are long
+    - maligned         # deprecated
+    - nlreturn         # conflicts with formatter
+    - scopelint        # deprecated
+    - wrapcheck        # forces to wrap errors everywhere
+    - wsl              # too annoying
+    - varnamelen       # annoying
+    - exhaustruct      # verbose style
+    - execinquery      # annoying
+    - nosnakecase      # snake case is used in the codebase
+    - interfacebloat   # controversy to codebase
+    - funlen           # some logic is really long
+
+issues:
+  exclude-use-default: false
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - funlen       # tests may be long
+        - testpackage  # senseless
+        - unused       # very annoying false positive: https://github.com/golangci/golangci-lint/issues/791
