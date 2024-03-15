@@ -30,9 +30,11 @@ import (
 )
 
 const (
-	telemetryFile = "/usr/local/percona/telemetry_uuid"
+
 	// InstanceIDKey key name in telemetryFile with host instance ID.
 	InstanceIDKey = "instanceId"
+	unknownOS     = "unknown"
+	telemetryFile = "/usr/local/percona/telemetry_uuid"
 )
 
 // ScrapeHostMetrics gathers metrics about host where Telemetry Agent is running.
@@ -99,12 +101,9 @@ func getInstanceID(instanceFile string) (string, error) { //nolint:cyclop
 
 	file, err := os.Open(cleanInstanceFile)
 	// do not forget to close file.
-	defer func(file *os.File, fl *zap.SugaredLogger) {
-		err := file.Close()
-		if err != nil {
-			fl.Errorw("failed to close Percona telemetry file", zap.Error(err))
-		}
-	}(file, l)
+	defer func() {
+		_ = file.Close()
+	}()
 
 	if err != nil {
 		if !errors.Is(err, os.ErrNotExist) {
@@ -154,11 +153,30 @@ func getDeploymentInfo() string {
 }
 
 func getOSInfo() string {
-	gi, err := goInfo.GetInfo()
-	if err != nil {
-		return "unknown"
+	filePath := filepath.Join("/etc", "os-release")
+	if _, err := os.Stat(filePath); err == nil {
+		zap.L().Sugar().Debugw("getting OS info from file", zap.String("file", filePath))
+		return readOSReleaseFile(filePath)
 	}
-	return fmt.Sprintf("%s %s", gi.OS, gi.Core)
+
+	filePath = filepath.Join("/etc", "system-release")
+	if _, err := os.Stat(filePath); err == nil {
+		zap.L().Sugar().Debugw("getting OS info from file", zap.String("file", filePath))
+		return readSystemReleaseFile(filePath)
+	}
+
+	filePath = filepath.Join("/etc", "redhat-release")
+	if _, err := os.Stat(filePath); err == nil {
+		zap.L().Sugar().Debugw("getting OS info from file", zap.String("file", filePath))
+		return readSystemReleaseFile(filePath)
+	}
+
+	filePath = filepath.Join("/etc", "issue")
+	if _, err := os.Stat(filePath); err == nil {
+		zap.L().Sugar().Debugw("getting OS info from file", zap.String("file", filePath))
+		return readSystemReleaseFile(filePath)
+	}
+	return unknownOS
 }
 
 func getHardwareInfo() string {
@@ -167,4 +185,42 @@ func getHardwareInfo() string {
 		return "unknown"
 	}
 	return gi.Platform
+}
+
+func readOSReleaseFile(fileName string) string {
+	f, err := os.Open(filepath.Clean(fileName))
+	if err != nil {
+		return unknownOS
+	}
+	defer func() {
+		_ = f.Close()
+	}()
+
+	s := bufio.NewScanner(f)
+	for s.Scan() {
+		line := s.Text()
+		if strings.HasPrefix(line, "PRETTY_NAME=") {
+			parts := strings.Split(line, "=")
+			if len(parts) >= 2 {
+				return strings.Trim(parts[1], `"`)
+			}
+		}
+	}
+	return unknownOS
+}
+
+func readSystemReleaseFile(fileName string) string {
+	f, err := os.Open(filepath.Clean(fileName))
+	if err != nil {
+		return unknownOS
+	}
+	defer func() {
+		_ = f.Close()
+	}()
+
+	s := bufio.NewScanner(f)
+	if s.Scan() {
+		return strings.Trim(s.Text(), `"`)
+	}
+	return unknownOS
 }

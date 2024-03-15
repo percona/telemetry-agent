@@ -31,7 +31,7 @@ func TestGetInstanceID(t *testing.T) { //nolint:tparallel
 	tests := []struct {
 		name              string
 		setupTestData     func(t *testing.T, tmpDir, instanceFile, instanceID string) // Setups necessary data for the test
-		postCheckTestData func(t *testing.T, tmpDir, instanceFile string)             // Post CleanupMetricsHistory function validation
+		postCheckTestData func(t *testing.T, tmpDir, instanceFile string)             // Post function validation/cleanup
 		wantErr           bool                                                        // Flags if we want the test to return an error
 		newID             bool
 	}{
@@ -153,6 +153,149 @@ func TestGetInstanceID(t *testing.T) { //nolint:tparallel
 				}
 			}
 			tt.postCheckTestData(t, tmpDir, instanceFile)
+		})
+	}
+}
+
+// TestReadOSReleaseFile tests the function readOSReleaseFile.
+func TestReadOSReleaseFile(t *testing.T) { //nolint:tparallel
+	t.Parallel()
+
+	tests := []struct {
+		name              string
+		setupTestData     func(t *testing.T, tmpDir, releaseFile string) // Setups necessary data for the test
+		postCheckTestData func(t *testing.T, tmpDir, releaseFile string) // Post function validation/cleanup
+		want              string
+	}{
+		{
+			name: "file_absent",
+			setupTestData: func(t *testing.T, tmpDir, releaseFile string) {
+				t.Helper()
+			},
+			postCheckTestData: func(t *testing.T, tmpDir, releaseFile string) {
+				t.Helper()
+				checkDirectoryContentCount(t, tmpDir, 0)
+				checkFilesAbsent(t, tmpDir, releaseFile)
+			},
+			want: unknownOS,
+		},
+		{
+			name: "file_exists",
+			setupTestData: func(t *testing.T, tmpDir, releaseFile string) {
+				t.Helper()
+				fileContent := `NAME="Oracle Linux Server"
+VERSION="9.2"
+ID="ol"
+ID_LIKE="fedora"
+VARIANT="Server"
+VARIANT_ID="server"
+VERSION_ID="9.2"
+PLATFORM_ID="platform:el9"
+PRETTY_NAME="Oracle Linux Server 9.2"
+ANSI_COLOR="0;31"
+CPE_NAME="cpe:/o:oracle:linux:9:2:server"
+HOME_URL="https://linux.oracle.com/"
+BUG_REPORT_URL="https://github.com/oracle/oracle-linux"
+
+ORACLE_BUGZILLA_PRODUCT="Oracle Linux 9"
+ORACLE_BUGZILLA_PRODUCT_VERSION=9.2
+ORACLE_SUPPORT_PRODUCT="Oracle Linux"
+ORACLE_SUPPORT_PRODUCT_VERSION=9.2
+`
+				err := os.WriteFile(filepath.Join(tmpDir, releaseFile), []byte(fileContent), 0o600)
+				require.NoError(t, err)
+			},
+			postCheckTestData: func(t *testing.T, tmpDir, releaseFile string) {
+				t.Helper()
+				checkDirectoryContentCount(t, tmpDir, 1)
+				checkFilesExist(t, tmpDir, releaseFile)
+			},
+			want: "Oracle Linux Server 9.2",
+		},
+	}
+
+	for _, tt := range tests { //nolint:paralleltest
+		t.Run(tt.name, func(t *testing.T) {
+			tmpDir, err := os.MkdirTemp("", "testOS")
+			require.NoError(t, err)
+			t.Cleanup(func() {
+				_ = os.RemoveAll(tmpDir)
+			})
+
+			releaseFile := "os-release"
+			tt.setupTestData(t, tmpDir, releaseFile)
+			require.Equal(t, tt.want, readOSReleaseFile(filepath.Join(tmpDir, releaseFile)))
+			tt.postCheckTestData(t, tmpDir, releaseFile)
+		})
+	}
+}
+
+// TestReadSystemReleaseFile tests the function readSystemReleaseFile.
+func TestReadSystemReleaseFile(t *testing.T) { //nolint:tparallel
+	t.Parallel()
+
+	tests := []struct {
+		name              string
+		setupTestData     func(t *testing.T, tmpDir, releaseFile string) // Setups necessary data for the test
+		postCheckTestData func(t *testing.T, tmpDir, releaseFile string) // Post function validation/cleanup
+		want              string
+	}{
+		{
+			name: "file_absent",
+			setupTestData: func(t *testing.T, tmpDir, releaseFile string) {
+				t.Helper()
+			},
+			postCheckTestData: func(t *testing.T, tmpDir, releaseFile string) {
+				t.Helper()
+				checkDirectoryContentCount(t, tmpDir, 0)
+				checkFilesAbsent(t, tmpDir, releaseFile)
+			},
+			want: unknownOS,
+		},
+		{
+			name: "system_format",
+			setupTestData: func(t *testing.T, tmpDir, releaseFile string) {
+				t.Helper()
+				fileContent := "Oracle Linux Server release 9.2"
+				err := os.WriteFile(filepath.Join(tmpDir, releaseFile), []byte(fileContent), 0o600)
+				require.NoError(t, err)
+			},
+			postCheckTestData: func(t *testing.T, tmpDir, releaseFile string) {
+				t.Helper()
+				checkDirectoryContentCount(t, tmpDir, 1)
+				checkFilesExist(t, tmpDir, releaseFile)
+			},
+			want: "Oracle Linux Server release 9.2",
+		},
+		{
+			name: "redhat_format",
+			setupTestData: func(t *testing.T, tmpDir, releaseFile string) {
+				t.Helper()
+				fileContent := "Red Hat Enterprise Linux release 9.2 (Plow)"
+				err := os.WriteFile(filepath.Join(tmpDir, releaseFile), []byte(fileContent), 0o600)
+				require.NoError(t, err)
+			},
+			postCheckTestData: func(t *testing.T, tmpDir, releaseFile string) {
+				t.Helper()
+				checkDirectoryContentCount(t, tmpDir, 1)
+				checkFilesExist(t, tmpDir, releaseFile)
+			},
+			want: "Red Hat Enterprise Linux release 9.2 (Plow)",
+		},
+	}
+
+	for _, tt := range tests { //nolint:paralleltest
+		t.Run(tt.name, func(t *testing.T) {
+			tmpDir, err := os.MkdirTemp("", "testOS")
+			require.NoError(t, err)
+			t.Cleanup(func() {
+				_ = os.RemoveAll(tmpDir)
+			})
+
+			releaseFile := "system-release"
+			tt.setupTestData(t, tmpDir, releaseFile)
+			require.Equal(t, tt.want, readSystemReleaseFile(filepath.Join(tmpDir, releaseFile)))
+			tt.postCheckTestData(t, tmpDir, releaseFile)
 		})
 	}
 }

@@ -18,6 +18,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -110,18 +111,34 @@ func processPillarsMetrics(c config.Config) []*metrics.File {
 }
 
 // The main function for processing Percona Pillar's telemetry and sending it to Percona Platform.
-func processMetrics(ctx context.Context, c config.Config, platformClient *platformClient.Client) error {
+func processMetrics(ctx context.Context, c config.Config, platformClient *platformClient.Client) { //nolint:cyclop
 	l := zap.L().Sugar()
 
 	l.Info("scraping host metrics")
 	hostMetrics, err := metrics.ScrapeHostMetrics()
 	if err != nil {
-		l.Errorw("failed to scrape host metrics", zap.Error(err))
-		return err
+		l.Warnw("failed to scrape host metrics", zap.Error(err))
 	}
 	hostInstanceID := hostMetrics.Metrics[metrics.InstanceIDKey]
 	// instanceId is not needed in main metrics set
 	delete(hostMetrics.Metrics, metrics.InstanceIDKey)
+
+	l.Info("scraping installed Percona packages metrics")
+	packages, err := metrics.ScrapeInstalledPackages(ctx)
+	if err != nil {
+		l.Warnw("failed to list installed packages", zap.Error(err))
+	}
+
+	if len(packages) != 0 {
+		// add info about installed packages to host metrics.
+		jsonData, err := json.Marshal(packages)
+		if err != nil {
+			l.Warnw("failed to marshal installed packages into JSON", zap.Error(err))
+		}
+		hostMetrics.Metrics["installed_packages"] = string(jsonData)
+	}
+
+	l.Debugw("YAKUT", zap.Any("metrics", hostMetrics.Metrics))
 
 	pillarMetrics := processPillarsMetrics(c)
 	for _, pillarM := range pillarMetrics {
@@ -188,7 +205,6 @@ func processMetrics(ctx context.Context, c config.Config, platformClient *platfo
 			continue
 		}
 	}
-	return nil
 }
 
 func main() {
@@ -214,7 +230,7 @@ PERCONA_TELEMETRY_HISTORY_KEEP_INTERVAL - define time interval in seconds for ke
 	}
 	flag.Parse()
 
-	logger.SetupGlobal(&logger.GlobalOpts{LogName: "telemetry-agent", LogDevMode: false, LogDebug: *verbose})
+	logger.SetupGlobal(&logger.GlobalOpts{LogName: "telemetry-agent", LogDevMode: true, LogDebug: *verbose})
 	l := zap.L().Sugar()
 	defer func(l *zap.SugaredLogger) {
 		_ = l.Sync()
@@ -264,10 +280,7 @@ PERCONA_TELEMETRY_HISTORY_KEEP_INTERVAL - define time interval in seconds for ke
 					}
 
 					l.Info("processing Pillars metric files")
-					if err := processMetrics(ctx, conf, pltClient); err != nil {
-						l.Errorw("error during processing Pillars metric files", zap.Error(err))
-						// not critical error, keep processing
-					}
+					processMetrics(ctx, conf, pltClient)
 					l.Info(fmt.Sprintf("sleep for %d seconds", conf.TelemetryCheckInterval))
 				}
 			}
