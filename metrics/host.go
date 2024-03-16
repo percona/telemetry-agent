@@ -32,9 +32,12 @@ import (
 const (
 
 	// InstanceIDKey key name in telemetryFile with host instance ID.
-	InstanceIDKey = "instanceId"
-	unknownOS     = "unknown"
-	telemetryFile = "/usr/local/percona/telemetry_uuid"
+	InstanceIDKey     = "instanceId"
+	unknownOS         = "unknown"
+	telemetryFile     = "/usr/local/percona/telemetry_uuid"
+	deploymentPackage = "PACKAGE"
+	deploymentDocker  = "DOCKER"
+	perconaDockerEnv  = "FULL_PERCONA_VERSION"
 )
 
 // ScrapeHostMetrics gathers metrics about host where Telemetry Agent is running.
@@ -149,7 +152,10 @@ func createTelemetryFile(instanceFile string) (string, error) {
 }
 
 func getDeploymentInfo() string {
-	return "PACKAGE"
+	if _, found := os.LookupEnv(perconaDockerEnv); found {
+		return deploymentDocker
+	}
+	return deploymentPackage
 }
 
 func getOSInfo() string {

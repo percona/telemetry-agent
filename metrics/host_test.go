@@ -299,3 +299,45 @@ func TestReadSystemReleaseFile(t *testing.T) { //nolint:tparallel
 		})
 	}
 }
+
+func TestGetDeploymentInfo(t *testing.T) { //nolint:paralleltest
+	testCases := []struct {
+		name          string
+		setupTestData func(t *testing.T)
+		expected      string
+	}{
+		{
+			name: "no_env_defined",
+			setupTestData: func(t *testing.T) {
+				t.Helper()
+			},
+			expected: deploymentPackage,
+		},
+		{
+			name: "env_defined_empty",
+			setupTestData: func(t *testing.T) {
+				t.Helper()
+
+				t.Setenv(perconaDockerEnv, "")
+			},
+			expected: deploymentDocker,
+		},
+		{
+			name: "env_defined",
+			setupTestData: func(t *testing.T) {
+				t.Helper()
+
+				t.Setenv(perconaDockerEnv, "")
+			},
+			expected: deploymentDocker,
+		},
+	}
+
+	for _, tt := range testCases { //nolint:paralleltest
+		t.Run(tt.name, func(t *testing.T) {
+			tt.setupTestData(t)
+			got := getDeploymentInfo()
+			require.Equal(t, tt.expected, got)
+		})
+	}
+}
