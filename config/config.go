@@ -50,8 +50,6 @@ type Config struct {
 // InitConfig parses Telemetry Agent configuration parameters.
 // If some parameters are not defined - default values are used instead.
 func InitConfig() Config {
-	// viper.SetEnvPrefix(perconaTelemetryEnvPrefix)
-
 	viper.MustBindEnv(telemetryRootPath)
 	viper.SetDefault(telemetryRootPath, filepath.Join("/usr", "local", "percona", "telemetry"))
 	rootPathValue := viper.GetString(telemetryRootPath)

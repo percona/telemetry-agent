@@ -32,7 +32,6 @@ func TestGetInstanceID(t *testing.T) {
 		name              string
 		setupTestData     func(t *testing.T, tmpDir, instanceFile, instanceID string) // Setups necessary data for the test
 		postCheckTestData func(t *testing.T, tmpDir, instanceFile string)             // Post function validation/cleanup
-		wantErr           bool                                                        // Flags if we want the test to return an error
 		newID             bool
 	}{
 		{
@@ -49,8 +48,7 @@ func TestGetInstanceID(t *testing.T) {
 				require.NoError(t, err)
 				require.Contains(t, string(data), "instanceId: ")
 			},
-			wantErr: false,
-			newID:   true,
+			newID: true,
 		},
 		{
 			name: "non_existing_file",
@@ -66,8 +64,7 @@ func TestGetInstanceID(t *testing.T) {
 				require.NoError(t, err)
 				require.Contains(t, string(data), "instanceId: ")
 			},
-			wantErr: false,
-			newID:   true,
+			newID: true,
 		},
 		{
 			name: "empty_file",
@@ -86,8 +83,7 @@ func TestGetInstanceID(t *testing.T) {
 				require.NoError(t, err)
 				require.Contains(t, string(data), "instanceId: ")
 			},
-			wantErr: false,
-			newID:   true,
+			newID: true,
 		},
 		{
 			name: "file_presents_single_line",
@@ -101,8 +97,7 @@ func TestGetInstanceID(t *testing.T) {
 				checkDirectoryContentCount(t, tmpDir, 1)
 				checkFilesExist(t, tmpDir, instanceFile)
 			},
-			wantErr: false,
-			newID:   false,
+			newID: false,
 		},
 		{
 			name: "file_presents_multi_lines",
@@ -117,8 +112,7 @@ func TestGetInstanceID(t *testing.T) {
 				checkDirectoryContentCount(t, tmpDir, 1)
 				checkFilesExist(t, tmpDir, instanceFile)
 			},
-			wantErr: false,
-			newID:   false,
+			newID: false,
 		},
 	}
 
@@ -143,17 +137,12 @@ func TestGetInstanceID(t *testing.T) {
 				tt.setupTestData(t, tmpDir, instanceFile, instanceID)
 			}
 
-			got, err := getInstanceID(filepath.Join(tmpDir, "telemetry_uuid"))
-			if tt.wantErr {
-				require.Error(t, err)
+			got := getInstanceID(filepath.Join(tmpDir, "telemetry_uuid"))
+			if tt.newID {
+				// in this case getInstanceID function generates new ID on its own.
+				require.NotEmpty(t, got)
 			} else {
-				require.NoError(t, err)
-				if tt.newID {
-					// in this case getInstanceID function generates new ID on its own.
-					require.NotEmpty(t, got)
-				} else {
-					require.Equal(t, instanceID, got)
-				}
+				require.Equal(t, instanceID, got)
 			}
 			tt.postCheckTestData(t, tmpDir, instanceFile)
 		})

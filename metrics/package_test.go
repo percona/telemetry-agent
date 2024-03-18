@@ -17,7 +17,6 @@ package metrics
 
 import (
 	"errors"
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -157,7 +156,7 @@ func TestParseDpkgOutput(t *testing.T) {
 			dpkgOutput:  "",
 			dpkgErr:     errors.New("dpkg-query: error while loading shared libraries: libapt-pkg.so.6.0: cannot open shared object file: No such file or directory"),
 			expectedPkg: nil,
-			expectErr:   fmt.Errorf("error listing installed packages: %w", errors.New("dpkg-query: error while loading shared libraries: libapt-pkg.so.6.0: cannot open shared object file: No such file or directory")),
+			expectErr:   errors.New("dpkg-query: error while loading shared libraries: libapt-pkg.so.6.0: cannot open shared object file: No such file or directory"),
 		},
 		{
 			name:        "InvalidDpkgOutput",
@@ -230,7 +229,7 @@ func TestParseRpmOutput(t *testing.T) {
 			rpmOutput:   "",
 			rpmErr:      errors.New("rpm: -x: unknown option"),
 			expectedPkg: nil,
-			expectErr:   fmt.Errorf("error listing installed packages: %w", errors.New("rpm: -x: unknown option")),
+			expectErr:   errors.New("rpm: -x: unknown option"),
 		},
 		{
 			name:        "InvalidRpmOutput",
@@ -238,7 +237,7 @@ func TestParseRpmOutput(t *testing.T) {
 			rpmOutput:   "'percona-xtradb-cluster-server 8.0.35'",
 			rpmErr:      nil,
 			expectedPkg: nil,
-			expectErr:   fmt.Errorf("error parsing rpm line %q", "'percona-xtradb-cluster-server 8.0.35'"),
+			expectErr:   errPackageNotFound,
 		},
 	}
 

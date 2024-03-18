@@ -19,7 +19,6 @@ import (
 	"bufio"
 	"context"
 	"errors"
-	"fmt"
 	"os/exec"
 	"strings"
 	"time"
@@ -33,6 +32,9 @@ const (
 
 var errPackageNotFound = errors.New("package is not found")
 
+// NOTE: the logic in this file is designed in a way "do our best to provide value", i.e. in case an error appears
+// it is not passed to upper level but is just printed into log stream and fallback value is applied.
+
 // Package represents a software package with its name and version.
 type Package struct {
 	Name    string `json:"name"`
@@ -44,10 +46,12 @@ type queryPkgFunc func(ctx context.Context, packageName string) (*Package, error
 
 // ScrapeInstalledPackages scrapes the installed packages on the host and returns a slice of Package structs along with any errors encountered.
 // The function uses the localOs variable to determine the package manager to use.
-func ScrapeInstalledPackages(ctx context.Context) ([]*Package, error) {
-	var pkgFunc queryPkgFunc
+func ScrapeInstalledPackages(ctx context.Context) []*Package {
 	pkgList := getCommonPackages()
 	localOs := getOSInfo()
+
+	toReturn := make([]*Package, 0, 1)
+	var pkgFunc queryPkgFunc
 
 	switch {
 	case isDebianFamily(localOs):
@@ -58,16 +62,15 @@ func ScrapeInstalledPackages(ctx context.Context) ([]*Package, error) {
 		pkgList = append(pkgList, getRhelPackages()...)
 	default:
 		zap.L().Sugar().Warnw("unsupported package system", zap.String("OS", localOs))
-		return nil, fmt.Errorf("unsupported package system")
+		return toReturn
 	}
 
-	toReturn := make([]*Package, 0, len(pkgList))
 	var pkg *Package
 	var err error
 	for _, pName := range pkgList {
 		if pkg, err = pkgFunc(ctx, pName); err != nil {
 			if !errors.Is(err, errPackageNotFound) {
-				zap.L().Sugar().Warnw("can't get package info", zap.Error(err), zap.String("package", pName))
+				zap.L().Sugar().Warnw("failed to get package info", zap.Error(err), zap.String("package", pName))
 			}
 			// go to next package silently
 			continue
@@ -75,7 +78,7 @@ func ScrapeInstalledPackages(ctx context.Context) ([]*Package, error) {
 		// package is installed
 		toReturn = append(toReturn, pkg)
 	}
-	return toReturn, nil
+	return toReturn
 }
 
 func isDebianFamily(name string) bool {
@@ -122,7 +125,7 @@ func parseDpkgOutput(packageName, dpkgOutput string, dpkgErr error) (*Package, e
 		}
 
 		zap.L().Sugar().Debugw("cmd output", zap.String("output", dpkgOutput))
-		return nil, fmt.Errorf("error listing installed packages: %w", dpkgErr)
+		return nil, dpkgErr
 	}
 
 	scanner := bufio.NewScanner(strings.NewReader(dpkgOutput))
@@ -136,21 +139,15 @@ func parseDpkgOutput(packageName, dpkgOutput string, dpkgErr error) (*Package, e
 		}
 
 		tokens := strings.Split(line, " ")
-		if tokens[0] != packageName {
-			continue
-		}
-
-		if len(tokens) == 2 {
-			// the output is:
-			// '<package name> <state>'
-			// package is known but state != Installed
-			continue
-		}
 		// The successful line for package shall be in format:
 		// <package name> <status> <version>.
 		// Example:
 		// 'percona-xtrabackup-81 ii 8.1.0-1-1.jammy'
 		if len(tokens) != 3 {
+			continue
+		}
+
+		if tokens[0] != packageName {
 			continue
 		}
 
@@ -165,7 +162,8 @@ func parseDpkgOutput(packageName, dpkgOutput string, dpkgErr error) (*Package, e
 	}
 
 	if err := scanner.Err(); err != nil {
-		return nil, fmt.Errorf("error listing installed packages: %w", err)
+		zap.L().Sugar().Warnw("failed to read output from dpkg-query", zap.Error(err))
+		return nil, err
 	}
 
 	if len(version) > 0 {
@@ -199,7 +197,7 @@ func parseRpmOutput(packageName, rpmOutput string, rpmErr error) (*Package, erro
 		}
 
 		zap.L().Sugar().Debugw("cmd output", zap.String("output", rpmOutput))
-		return nil, fmt.Errorf("error listing installed packages: %w", rpmErr)
+		return nil, rpmErr
 	}
 
 	scanner := bufio.NewScanner(strings.NewReader(rpmOutput))
@@ -212,12 +210,16 @@ func parseRpmOutput(packageName, rpmOutput string, rpmErr error) (*Package, erro
 		}
 
 		tokens := strings.Split(line, " ")
+		// The successful line for package shall be in format:
+		// <package name> <version> <release>.
+		// Example:
+		// 'percona-xtrabackup-81 8.1.0 1.1.el8'
 		if len(tokens) != 3 {
-			return nil, fmt.Errorf("error parsing rpm line %q", line)
+			continue
 		}
 
 		if tokens[0] != packageName {
-			return nil, fmt.Errorf("error parsing rpm line %q", line)
+			continue
 		}
 		release := tokens[2]
 		// need to trim extra chars from release part
@@ -232,7 +234,8 @@ func parseRpmOutput(packageName, rpmOutput string, rpmErr error) (*Package, erro
 	}
 
 	if err := scanner.Err(); err != nil {
-		return nil, fmt.Errorf("error listing installed packages, scanner error: %w", err)
+		zap.L().Sugar().Warnw("failed to read output from rpm", zap.Error(err))
+		return nil, err
 	}
 
 	if len(version) > 0 {
@@ -307,5 +310,7 @@ func getCommonPackages() []string {
 		"percona-haproxy",
 		// PMM Agent
 		"pmm2-client",
+		// Telemetry Agent
+		"percona-telemetry-agent",
 	}
 }
