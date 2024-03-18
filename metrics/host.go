@@ -135,6 +135,10 @@ func getInstanceID(instanceFile string) (string, error) { //nolint:cyclop
 		}
 	}
 
+	if err := scanner.Err(); err != nil {
+		return "", fmt.Errorf("error reading Percona telemetry file, scanner error: %w", err)
+	}
+
 	if len(instanceID) == 0 {
 		l.Error("failed to get Percona telemetry instanceID, it is empty")
 	}
@@ -202,9 +206,9 @@ func readOSReleaseFile(fileName string) string {
 		_ = f.Close()
 	}()
 
-	s := bufio.NewScanner(f)
-	for s.Scan() {
-		line := s.Text()
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		line := scanner.Text()
 		if strings.HasPrefix(line, "PRETTY_NAME=") {
 			parts := strings.Split(line, "=")
 			if len(parts) >= 2 {
@@ -212,6 +216,12 @@ func readOSReleaseFile(fileName string) string {
 			}
 		}
 	}
+
+	if err := scanner.Err(); err != nil {
+		zap.L().Sugar().Warnw("error reading os release file", zap.String("file", fileName), zap.Error(err))
+		return unknownOS
+	}
+
 	return unknownOS
 }
 
@@ -224,9 +234,14 @@ func readSystemReleaseFile(fileName string) string {
 		_ = f.Close()
 	}()
 
-	s := bufio.NewScanner(f)
-	if s.Scan() {
-		return strings.Trim(s.Text(), `"`)
+	scanner := bufio.NewScanner(f)
+	if scanner.Scan() {
+		return strings.Trim(scanner.Text(), `"`)
+	}
+
+	if err := scanner.Err(); err != nil {
+		zap.L().Sugar().Warnw("error reading system release file", zap.String("file", fileName), zap.Error(err))
+		return unknownOS
 	}
 	return unknownOS
 }

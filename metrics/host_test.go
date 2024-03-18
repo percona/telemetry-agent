@@ -25,7 +25,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestGetInstanceID(t *testing.T) { //nolint:tparallel
+func TestGetInstanceID(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -122,8 +122,11 @@ func TestGetInstanceID(t *testing.T) { //nolint:tparallel
 		},
 	}
 
-	for _, tt := range tests { //nolint:paralleltest
+	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			tmpDir, err := os.MkdirTemp("", "test")
 			require.NoError(t, err)
 			t.Cleanup(func() {
@@ -158,7 +161,7 @@ func TestGetInstanceID(t *testing.T) { //nolint:tparallel
 }
 
 // TestReadOSReleaseFile tests the function readOSReleaseFile.
-func TestReadOSReleaseFile(t *testing.T) { //nolint:tparallel
+func TestReadOSReleaseFile(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -214,8 +217,11 @@ ORACLE_SUPPORT_PRODUCT_VERSION=9.2
 		},
 	}
 
-	for _, tt := range tests { //nolint:paralleltest
+	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			tmpDir, err := os.MkdirTemp("", "testOS")
 			require.NoError(t, err)
 			t.Cleanup(func() {
@@ -231,7 +237,7 @@ ORACLE_SUPPORT_PRODUCT_VERSION=9.2
 }
 
 // TestReadSystemReleaseFile tests the function readSystemReleaseFile.
-func TestReadSystemReleaseFile(t *testing.T) { //nolint:tparallel
+func TestReadSystemReleaseFile(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -284,8 +290,11 @@ func TestReadSystemReleaseFile(t *testing.T) { //nolint:tparallel
 		},
 	}
 
-	for _, tt := range tests { //nolint:paralleltest
+	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			tmpDir, err := os.MkdirTemp("", "testOS")
 			require.NoError(t, err)
 			t.Cleanup(func() {

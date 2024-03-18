@@ -28,7 +28,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func TestWriteMetricsToHistory(t *testing.T) { //nolint:tparallel
+func TestWriteMetricsToHistory(t *testing.T) {
 	t.Parallel()
 
 	testCases := []struct {
@@ -191,8 +191,11 @@ func TestWriteMetricsToHistory(t *testing.T) { //nolint:tparallel
 		},
 	}
 
-	for _, tt := range testCases { //nolint:paralleltest
+	for _, tt := range testCases {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			tmpDir, err := os.MkdirTemp("", "test")
 			require.NoError(t, err)
 			t.Cleanup(func() {
@@ -220,7 +223,7 @@ func TestWriteMetricsToHistory(t *testing.T) { //nolint:tparallel
 	}
 }
 
-func TestCleanupMetricsHistory(t *testing.T) { //nolint:tparallel
+func TestCleanupMetricsHistory(t *testing.T) {
 	t.Parallel()
 
 	currTime, token := time.Now(), uuid.New().String()
@@ -302,8 +305,11 @@ func TestCleanupMetricsHistory(t *testing.T) { //nolint:tparallel
 		},
 	}
 
-	for _, tt := range testCases { //nolint:paralleltest
+	for _, tt := range testCases {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			tmpDir, err := os.MkdirTemp("", "test")
 			require.NoError(t, err)
 			t.Cleanup(func() {

@@ -61,18 +61,19 @@ func ScrapeInstalledPackages(ctx context.Context) ([]*Package, error) {
 		return nil, fmt.Errorf("unsupported package system")
 	}
 
-	var toReturn []*Package
+	toReturn := make([]*Package, 0, len(pkgList))
+	var pkg *Package
+	var err error
 	for _, pName := range pkgList {
-		if pkg, err := pkgFunc(ctx, pName); err != nil {
-			if errors.Is(err, errPackageNotFound) {
-				// package is not installed, go to next package silently
-				continue
+		if pkg, err = pkgFunc(ctx, pName); err != nil {
+			if !errors.Is(err, errPackageNotFound) {
+				zap.L().Sugar().Warnw("can't get package info", zap.Error(err), zap.String("package", pName))
 			}
-			zap.L().Sugar().Warnw("can't get package info", zap.Error(err), zap.String("package", pName))
-		} else {
-			// package is installed
-			toReturn = append(toReturn, pkg)
+			// go to next package silently
+			continue
 		}
+		// package is installed
+		toReturn = append(toReturn, pkg)
 	}
 	return toReturn, nil
 }

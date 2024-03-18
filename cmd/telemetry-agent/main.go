@@ -138,8 +138,6 @@ func processMetrics(ctx context.Context, c config.Config, platformClient *platfo
 		hostMetrics.Metrics["installed_packages"] = string(jsonData)
 	}
 
-	l.Debugw("YAKUT", zap.Any("metrics", hostMetrics.Metrics))
-
 	pillarMetrics := processPillarsMetrics(c)
 	for _, pillarM := range pillarMetrics {
 		// prepare request to Percona Platform
@@ -208,7 +206,8 @@ func processMetrics(ctx context.Context, c config.Config, platformClient *platfo
 }
 
 func main() {
-	verbose := flag.Bool("verbose", false, "enable verbose logging")
+	verboseF := flag.Bool("verbose", false, "enable verbose logging")
+	devModeF := flag.Bool("dev-mode", false, "enable development mode in logging")
 	flag.Usage = func() {
 		flagSet := flag.CommandLine
 		fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
@@ -230,7 +229,7 @@ PERCONA_TELEMETRY_HISTORY_KEEP_INTERVAL - define time interval in seconds for ke
 	}
 	flag.Parse()
 
-	logger.SetupGlobal(&logger.GlobalOpts{LogName: "telemetry-agent", LogDevMode: true, LogDebug: *verbose})
+	logger.SetupGlobal(&logger.GlobalOpts{LogName: "telemetry-agent", LogDevMode: *devModeF, LogDebug: *verboseF})
 	l := zap.L().Sugar()
 	defer func(l *zap.SugaredLogger) {
 		_ = l.Sync()

@@ -97,27 +97,31 @@ var osNames = []struct { //nolint:gochecknoglobals
 	},
 }
 
-func TestIsDebianFamily(t *testing.T) { //nolint:tparallel
+func TestIsDebianFamily(t *testing.T) {
 	t.Parallel()
 
-	for _, tt := range osNames { //nolint:paralleltest
+	for _, tt := range osNames {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			require.Equal(t, tt.expectedDebian, isDebianFamily(tt.osName))
 		})
 	}
 }
 
-func TestIsRHELFamily(t *testing.T) { //nolint:tparallel
+func TestIsRHELFamily(t *testing.T) {
 	t.Parallel()
 
-	for _, tt := range osNames { //nolint:paralleltest
+	for _, tt := range osNames {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			require.Equal(t, tt.expectedRhel, isRHELFamily(tt.osName))
 		})
 	}
 }
 
-func TestParseDpkgOutput(t *testing.T) { //nolint:tparallel
+func TestParseDpkgOutput(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -173,8 +177,11 @@ func TestParseDpkgOutput(t *testing.T) { //nolint:tparallel
 		},
 	}
 
-	for _, tt := range tests { //nolint:paralleltest
+	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			pkg, err := parseDpkgOutput(tt.packageName, tt.dpkgOutput, tt.dpkgErr)
 			if tt.expectErr != nil {
 				require.ErrorAs(t, err, &tt.expectErr)
@@ -187,7 +194,7 @@ func TestParseDpkgOutput(t *testing.T) { //nolint:tparallel
 	}
 }
 
-func TestParseRpmOutput(t *testing.T) { //nolint:tparallel
+func TestParseRpmOutput(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -235,8 +242,11 @@ func TestParseRpmOutput(t *testing.T) { //nolint:tparallel
 		},
 	}
 
-	for _, tt := range tests { //nolint:paralleltest
+	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			pkg, err := parseRpmOutput(tt.packageName, tt.rpmOutput, tt.rpmErr)
 			if tt.expectErr != nil {
 				require.ErrorAs(t, err, &tt.expectErr)
