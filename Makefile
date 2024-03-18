@@ -1,3 +1,5 @@
+GOPRIVATE=github.com/Percona-Lab/telemetry-agent,github.com/percona-platform/saas,github.com/percona
+
 default: help
 
 help:                   ## Display this help message
@@ -9,7 +11,9 @@ init:                   ## Install development tools
 	cd tools && go generate -x -tags=tools
 
 install:                ## Install binaries
-	go build -race -o bin/telemetry-agent ./cmd/telemetry-agent
+	CGO_ENABLED=0 \
+	GOARCH=amd64 \
+	go build -a -ldflags '-extldflags "-static"' -o ./bin/telemetry-agent ./cmd/telemetry-agent
 
 gen:                    ## Generate code
 	go generate ./...
@@ -34,4 +38,4 @@ test-crosscover:        ## Run tests and collect cross-package coverage informat
 
 run:                    ## Run authed with race detector
 	go run -race cmd/telemetry-agent/main.go \
-		--verbose
+		--verbose --dev-mode
