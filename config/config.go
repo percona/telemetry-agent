@@ -35,6 +35,13 @@ const (
 	perconaTelemetryURLDefault     = "https://check.percona.com/v1/telemetry/GenericReport"
 )
 
+//nolint:gochecknoglobals
+var (
+	Version   string
+	Commit    string
+	BuildDate string
+)
+
 // TelemetryOpts represents the options for configuring telemetry paths on local filesystem.
 type TelemetryOpts struct {
 	RootPath            string `help:"define Percona telemetry root path on local filesystem." env:"PERCONA_TELEMETRY_ROOT_PATH" default:"/usr/local/percona/telemetry"`
@@ -64,6 +71,7 @@ type Config struct {
 	Telemetry TelemetryOpts `embed:"" prefix:"telemetry."`
 	Platform  PlatformOpts  `embed:"" prefix:"platform."`
 	Log       LogOpts       `embed:"" prefix:"log."`
+	Version   bool          `help:"Show version and exit"`
 }
 
 // InitConfig parses Telemetry Agent configuration parameters.
@@ -77,9 +85,9 @@ func InitConfig() Config {
 		kong.ConfigureHelp(kong.HelpOptions{
 			Compact: true,
 		}),
-		// kong.Vars{
-		// 	"version": version,
-		// },
+		kong.Vars{
+			"version": Version,
+		},
 	)
 
 	if len(conf.Telemetry.RootPath) == 0 {

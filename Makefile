@@ -1,6 +1,14 @@
-GOPRIVATE=github.com/Percona-Lab/telemetry-agent,github.com/percona-platform/saas,github.com/percona
-
+.PHONY: all build clean default help init test format check test-cover test-crosscover run
 default: help
+
+GOPRIVATE=github.com/Percona-Lab/telemetry-agent,github.com/percona-platform/saas,github.com/percona
+COMPONENT_VERSION ?= $(shell git describe --abbrev=0 --always)
+BUILD ?= $(shell date +%FT%T%z)
+TELEMETRY_AGENT_RELEASE_FULLCOMMIT ?= $(shell git rev-parse HEAD)
+GO_BUILD_LDFLAGS = -X github.com/percona-lab/telemetry-agent/config.Version=${COMPONENT_VERSION} \
+	-X github.com/percona-lab/telemetry-agent/config.BuildDate=${BUILD} \
+	-X github.com/percona-lab/telemetry-agent/config.Commit=${TELEMETRY_AGENT_RELEASE_FULLCOMMIT} \
+	-extldflags -static
 
 help:                   ## Display this help message
 	@echo "Please use \`make <target>\` where <target> is one of:"
@@ -10,16 +18,17 @@ help:                   ## Display this help message
 init:                   ## Install development tools
 	cd tools && go generate -x -tags=tools
 
-install:                ## Install binaries
+build:                ## Compile using plain go build
 	CGO_ENABLED=0 \
 	GOARCH=amd64 \
-	go build -a -ldflags '-extldflags "-static"' -o ./bin/telemetry-agent ./cmd/telemetry-agent
+	go build -a -ldflags="${GO_BUILD_LDFLAGS}" -o ./bin/telemetry-agent ./cmd/telemetry-agent
 
 gen:                    ## Generate code
 	go generate ./...
 	make format
 
 format:                 ## Format source code
+	go mod tidy
 	bin/gofumpt -l -w .
 	bin/goimports -local github.com/percona-lab/telemetry-agent -l -w .
 

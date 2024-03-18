@@ -198,6 +198,13 @@ func processMetrics(ctx context.Context, c config.Config, platformClient *platfo
 
 func main() {
 	conf := config.InitConfig()
+	if conf.Version {
+		fmt.Fprintf(os.Stdout, "Version: %s\n", config.Version)
+		fmt.Fprintf(os.Stdout, "Commit: %s\n", config.Commit)
+		fmt.Fprintf(os.Stdout, "Build date: %s\n", config.BuildDate)
+		os.Exit(0)
+	}
+
 	logger.SetupGlobal(&logger.GlobalOpts{LogName: "telemetry-agent", LogDevMode: conf.Log.DevMode, LogDebug: conf.Log.Verbose})
 	l := zap.L().Sugar()
 	defer func(l *zap.SugaredLogger) {
