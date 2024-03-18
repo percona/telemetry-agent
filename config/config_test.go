@@ -16,11 +16,11 @@
 package config
 
 import (
+	"os"
 	"path/filepath"
 	"strconv"
 	"testing"
 
-	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
 )
 
@@ -34,17 +34,27 @@ func TestInitConfig(t *testing.T) { //nolint:paralleltest
 			name: "all_default_values",
 			setupTestData: func(t *testing.T) {
 				t.Helper()
+				os.Args = []string{""}
 			},
 			expectedConfig: Config{
-				PSMetricsPath:                filepath.Join("/usr", "local", "percona", "telemetry", "ps"),
-				PSMDBMetricsPath:             filepath.Join("/usr", "local", "percona", "telemetry", "psmdb"),
-				PXCMetricsPath:               filepath.Join("/usr", "local", "percona", "telemetry", "pxc"),
-				PGMetricsPath:                filepath.Join("/usr", "local", "percona", "telemetry", "pg"),
-				TelemetryCheckInterval:       telemetryCheckIntervalDefault,
-				TelemetryResendTimeout:       telemetryResendIntervalDefault,
-				TelemetryHistoryPath:         filepath.Join("/usr", "local", "percona", "telemetry", "history"),
-				TelemetryHistoryKeepInterval: historyKeepIntervalDefault,
-				PerconaTelemetryURL:          perconaTelemetryURLDefault,
+				Telemetry: TelemetryOpts{
+					RootPath:            filepath.Join("/usr", "local", "percona", "telemetry"),
+					PSMetricsPath:       filepath.Join("/usr", "local", "percona", "telemetry", "ps"),
+					PSMDBMetricsPath:    filepath.Join("/usr", "local", "percona", "telemetry", "psmdb"),
+					PXCMetricsPath:      filepath.Join("/usr", "local", "percona", "telemetry", "pxc"),
+					PGMetricsPath:       filepath.Join("/usr", "local", "percona", "telemetry", "pg"),
+					CheckInterval:       telemetryCheckIntervalDefault,
+					HistoryPath:         filepath.Join("/usr", "local", "percona", "telemetry", "history"),
+					HistoryKeepInterval: historyKeepIntervalDefault,
+				},
+				Platform: PlatformOpts{
+					ResendTimeout: telemetryResendIntervalDefault,
+					URL:           perconaTelemetryURLDefault,
+				},
+				Log: LogOpts{
+					Verbose: false,
+					DevMode: false,
+				},
 			},
 		},
 		{
@@ -52,6 +62,7 @@ func TestInitConfig(t *testing.T) { //nolint:paralleltest
 			setupTestData: func(t *testing.T) {
 				t.Helper()
 
+				os.Args = []string{""}
 				t.Setenv(telemetryRootPath, "/tmp/percona")
 				t.Setenv(telemetryCheckInterval, strconv.Itoa(telemetryCheckIntervalDefault*2))
 				t.Setenv(telemetryResendInterval, strconv.Itoa(telemetryResendIntervalDefault*3))
@@ -59,15 +70,24 @@ func TestInitConfig(t *testing.T) { //nolint:paralleltest
 				t.Setenv(telemetryURL, "https://check.percona.com/v1/telemetry/GenericReport2")
 			},
 			expectedConfig: Config{
-				PSMetricsPath:                filepath.Join("/tmp", "percona", "ps"),
-				PSMDBMetricsPath:             filepath.Join("/tmp", "percona", "psmdb"),
-				PXCMetricsPath:               filepath.Join("/tmp", "percona", "pxc"),
-				PGMetricsPath:                filepath.Join("/tmp", "percona", "pg"),
-				TelemetryCheckInterval:       telemetryCheckIntervalDefault * 2,
-				TelemetryResendTimeout:       telemetryResendIntervalDefault * 3,
-				TelemetryHistoryPath:         filepath.Join("/tmp", "percona", "history"),
-				TelemetryHistoryKeepInterval: historyKeepIntervalDefault * 4,
-				PerconaTelemetryURL:          "https://check.percona.com/v1/telemetry/GenericReport2",
+				Telemetry: TelemetryOpts{
+					RootPath:            filepath.Join("/tmp", "percona"),
+					PSMetricsPath:       filepath.Join("/tmp", "percona", "ps"),
+					PSMDBMetricsPath:    filepath.Join("/tmp", "percona", "psmdb"),
+					PXCMetricsPath:      filepath.Join("/tmp", "percona", "pxc"),
+					PGMetricsPath:       filepath.Join("/tmp", "percona", "pg"),
+					CheckInterval:       telemetryCheckIntervalDefault * 2,
+					HistoryPath:         filepath.Join("/tmp", "percona", "history"),
+					HistoryKeepInterval: historyKeepIntervalDefault * 4,
+				},
+				Platform: PlatformOpts{
+					ResendTimeout: telemetryResendIntervalDefault * 3,
+					URL:           "https://check.percona.com/v1/telemetry/GenericReport2",
+				},
+				Log: LogOpts{
+					Verbose: false,
+					DevMode: false,
+				},
 			},
 		},
 		{
@@ -75,31 +95,36 @@ func TestInitConfig(t *testing.T) { //nolint:paralleltest
 			setupTestData: func(t *testing.T) {
 				t.Helper()
 
+				os.Args = []string{""}
 				t.Setenv(telemetryCheckInterval, strconv.Itoa(telemetryCheckIntervalDefault*2))
 				t.Setenv(telemetryResendInterval, strconv.Itoa(telemetryResendIntervalDefault*3))
 				t.Setenv(telemetryURL, "https://check-dev.percona.com/v1/telemetry/GenericReport2")
 			},
 			expectedConfig: Config{
-				PSMetricsPath:                filepath.Join("/usr", "local", "percona", "telemetry", "ps"),
-				PSMDBMetricsPath:             filepath.Join("/usr", "local", "percona", "telemetry", "psmdb"),
-				PXCMetricsPath:               filepath.Join("/usr", "local", "percona", "telemetry", "pxc"),
-				PGMetricsPath:                filepath.Join("/usr", "local", "percona", "telemetry", "pg"),
-				TelemetryCheckInterval:       telemetryCheckIntervalDefault * 2,
-				TelemetryResendTimeout:       telemetryResendIntervalDefault * 3,
-				TelemetryHistoryPath:         filepath.Join("/usr", "local", "percona", "telemetry", "history"),
-				TelemetryHistoryKeepInterval: historyKeepIntervalDefault,
-				PerconaTelemetryURL:          "https://check-dev.percona.com/v1/telemetry/GenericReport2",
+				Telemetry: TelemetryOpts{
+					RootPath:            filepath.Join("/usr", "local", "percona", "telemetry"),
+					PSMetricsPath:       filepath.Join("/usr", "local", "percona", "telemetry", "ps"),
+					PSMDBMetricsPath:    filepath.Join("/usr", "local", "percona", "telemetry", "psmdb"),
+					PXCMetricsPath:      filepath.Join("/usr", "local", "percona", "telemetry", "pxc"),
+					PGMetricsPath:       filepath.Join("/usr", "local", "percona", "telemetry", "pg"),
+					CheckInterval:       telemetryCheckIntervalDefault * 2,
+					HistoryPath:         filepath.Join("/usr", "local", "percona", "telemetry", "history"),
+					HistoryKeepInterval: historyKeepIntervalDefault,
+				},
+				Platform: PlatformOpts{
+					ResendTimeout: telemetryResendIntervalDefault * 3,
+					URL:           "https://check-dev.percona.com/v1/telemetry/GenericReport2",
+				},
+				Log: LogOpts{
+					Verbose: false,
+					DevMode: false,
+				},
 			},
 		},
 	}
 
 	for _, tt := range testCases { //nolint:paralleltest
 		t.Run(tt.name, func(t *testing.T) {
-			// resetting viper environment variables
-			t.Cleanup(func() {
-				viper.Reset()
-			})
-
 			tt.setupTestData(t)
 			gotConfig := InitConfig()
 			require.Equal(t, tt.expectedConfig, gotConfig)

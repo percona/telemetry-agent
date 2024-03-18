@@ -36,6 +36,7 @@ linters:
     - nosnakecase      # snake case is used in the codebase
     - interfacebloat   # controversy to codebase
     - funlen           # some logic is really long
+    - tagalign         # controversy to codebase
 
 issues:
   exclude-use-default: false

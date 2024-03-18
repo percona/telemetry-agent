@@ -20,7 +20,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"flag"
 	"fmt"
 	"net/url"
 	"os"
@@ -43,23 +42,23 @@ import (
 )
 
 // Creates the minimum required directory structure for Telemetry Agent functionality.
-func createTelemetryDirs(c config.Config) error {
-	d := c.TelemetryHistoryPath
-	zap.L().Sugar().Debugw("checking/creating telemetry directory", zap.String("directory", d))
+func createTelemetryDirs(dirs ...string) error {
+	for _, d := range dirs {
+		zap.L().Sugar().Debugw("checking/creating telemetry directory", zap.String("directory", d))
 
-	err := os.MkdirAll(d, os.ModePerm)
-	if err != nil {
-		zap.L().Sugar().Errorw("can't create directory",
-			zap.String("directory", d),
-			zap.Error(err))
-		return err
+		if err := os.MkdirAll(d, os.ModePerm); err != nil {
+			zap.L().Sugar().Errorw("can't create directory",
+				zap.String("directory", d),
+				zap.Error(err))
+			return err
+		}
 	}
 	return nil
 }
 
 // Create Percona Platform HTTP client for sending telemetry reports.
 func createPerconaPlatformClient(c config.Config) (*platformClient.Client, error) {
-	u, err := url.ParseRequestURI(c.PerconaTelemetryURL)
+	u, err := url.ParseRequestURI(c.Platform.URL)
 	if err != nil {
 		return nil, fmt.Errorf("can't create Percona Platform client: %w", err)
 	}
@@ -71,7 +70,7 @@ func createPerconaPlatformClient(c config.Config) (*platformClient.Client, error
 		platformClient.WithLogger(zap.L().Named("perconaPlatformClient").Sugar()),
 		platformClient.WithBaseURL(u.Scheme+"://"+u.Host),
 		platformClient.WithLogFullRequest(),
-		platformClient.WithResendTimeout(time.Second*time.Duration(c.TelemetryResendTimeout)),
+		platformClient.WithResendTimeout(time.Second*time.Duration(c.Platform.ResendTimeout)),
 		platformClient.WithRetryCount(5)), nil
 }
 
@@ -80,29 +79,29 @@ func processPillarsMetrics(c config.Config) []*metrics.File {
 
 	pillarMetrics := make([]*metrics.File, 0, 1)
 
-	l.Infow("processing PS metrics", zap.String("directory", c.PSMetricsPath))
-	if pMetrics, err := metrics.ProcessPSMetrics(c.PSMetricsPath); err != nil {
+	l.Infow("processing PS metrics", zap.String("directory", c.Telemetry.PSMetricsPath))
+	if pMetrics, err := metrics.ProcessPSMetrics(c.Telemetry.PSMetricsPath); err != nil {
 		l.Warnw("failed to process PS metrics", zap.Error(err))
 	} else {
 		pillarMetrics = append(pillarMetrics, pMetrics...)
 	}
 
-	l.Infow("processing PXC metrics", zap.String("directory", c.PXCMetricsPath))
-	if pMetrics, err := metrics.ProcessPXCMetrics(c.PXCMetricsPath); err != nil {
+	l.Infow("processing PXC metrics", zap.String("directory", c.Telemetry.PXCMetricsPath))
+	if pMetrics, err := metrics.ProcessPXCMetrics(c.Telemetry.PXCMetricsPath); err != nil {
 		l.Warnw("failed to process PXC metrics", zap.Error(err))
 	} else {
 		pillarMetrics = append(pillarMetrics, pMetrics...)
 	}
 
-	l.Infow("processing PSMDB metrics", zap.String("directory", c.PSMDBMetricsPath))
-	if pMetrics, err := metrics.ProcessPSMDBMetrics(c.PSMDBMetricsPath); err != nil {
+	l.Infow("processing PSMDB metrics", zap.String("directory", c.Telemetry.PSMDBMetricsPath))
+	if pMetrics, err := metrics.ProcessPSMDBMetrics(c.Telemetry.PSMDBMetricsPath); err != nil {
 		l.Warnw("failed to process PSMDB metrics", zap.Error(err))
 	} else {
 		pillarMetrics = append(pillarMetrics, pMetrics...)
 	}
 
-	l.Infow("processing PG metrics", zap.String("directory", c.PGMetricsPath))
-	if pMetrics, err := metrics.ProcessPGMetrics(c.PGMetricsPath); err != nil {
+	l.Infow("processing PG metrics", zap.String("directory", c.Telemetry.PGMetricsPath))
+	if pMetrics, err := metrics.ProcessPGMetrics(c.Telemetry.PGMetricsPath); err != nil {
 		l.Warnw("failed to process PG metrics", zap.Error(err))
 	} else {
 		pillarMetrics = append(pillarMetrics, pMetrics...)
@@ -174,7 +173,7 @@ func processMetrics(ctx context.Context, c config.Config, platformClient *platfo
 		}
 
 		// write sent data to history file
-		historyFile := filepath.Join(c.TelemetryHistoryPath, filepath.Base(pillarM.Filename))
+		historyFile := filepath.Join(c.Telemetry.HistoryPath, filepath.Base(pillarM.Filename))
 		l.Infow("writing metrics to history file",
 			zap.String("pillar file", pillarM.Filename),
 			zap.String("history file", historyFile))
@@ -198,41 +197,17 @@ func processMetrics(ctx context.Context, c config.Config, platformClient *platfo
 }
 
 func main() {
-	verboseF := flag.Bool("verbose", false, "enable verbose logging")
-	devModeF := flag.Bool("dev-mode", false, "enable development mode in logging")
-	flag.Usage = func() {
-		flagSet := flag.CommandLine
-		fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
-		order := []string{"verbose", "dev-mode"}
-		for _, name := range order {
-			f := flagSet.Lookup(name)
-			fmt.Fprintf(os.Stderr, "-%s\n\t%s\n", f.Name, f.Usage)
-		}
-		fmt.Fprintf(os.Stderr, "\n")
-		fmt.Fprintf(os.Stderr, `Environment variables:
-
-PERCONA_TELEMETRY_ROOT_PATH - define Percona telemetry root path on local filesystem. Default: /usr/local/percona/telemetry
-PERCONA_TELEMETRY_CHECK_INTERVAL - define time interval in seconds for checking Percona Pillars telemetry. Default: 86400 sec
-PERCONA_TELEMETRY_URL - define Percona Platform URL for sending Pillars telemetry to. Default: https://check.percona.com/v1/telemetry/GenericReport
-PERCONA_TELEMETRY_RESEND_INTERVAL - define wait time in seconds to sleep before retrying request to Percona Platform in case of request failure. Default: 60 sec
-PERCONA_TELEMETRY_HISTORY_KEEP_INTERVAL - define time interval in seconds for keeping old history telemetry files on filesystem. Default: 604800 sec (7d)
-
-`)
-	}
-	flag.Parse()
-
-	logger.SetupGlobal(&logger.GlobalOpts{LogName: "telemetry-agent", LogDevMode: *devModeF, LogDebug: *verboseF})
+	conf := config.InitConfig()
+	logger.SetupGlobal(&logger.GlobalOpts{LogName: "telemetry-agent", LogDevMode: conf.Log.DevMode, LogDebug: conf.Log.Verbose})
 	l := zap.L().Sugar()
 	defer func(l *zap.SugaredLogger) {
 		_ = l.Sync()
 	}(l)
 
-	l.Info("parsing env params")
-	conf := config.InitConfig()
 	l.Infow("values from config:", zap.Any("config", conf))
 
 	// check that <telemetry root>/history dir exists on filesystem
-	if err := createTelemetryDirs(conf); err != nil {
+	if err := createTelemetryDirs(conf.Telemetry.HistoryPath); err != nil {
 		l.DPanic(err)
 	}
 
@@ -248,8 +223,8 @@ PERCONA_TELEMETRY_HISTORY_KEEP_INTERVAL - define time interval in seconds for ke
 	wg.Add(1)
 	utils.SignalRunner(
 		func() {
-			checkIntv := time.Duration(conf.TelemetryCheckInterval) * time.Second
-			l.Infof("sleeping for %d seconds before first iteration", conf.TelemetryCheckInterval)
+			checkIntv := time.Duration(conf.Telemetry.CheckInterval) * time.Second
+			l.Infof("sleeping for %d seconds before first iteration", conf.Telemetry.CheckInterval)
 
 			ticker := time.NewTicker(checkIntv)
 			for {
@@ -264,15 +239,15 @@ PERCONA_TELEMETRY_HISTORY_KEEP_INTERVAL - define time interval in seconds for ke
 					// start new metrics processing iteration
 					l.Info("start metrics processing iteration")
 
-					l.Infow("cleaning up history metric files", zap.String("directory", conf.TelemetryHistoryPath))
-					if err := metrics.CleanupMetricsHistory(conf.TelemetryHistoryPath, conf.TelemetryHistoryKeepInterval); err != nil {
+					l.Infow("cleaning up history metric files", zap.String("directory", conf.Telemetry.HistoryPath))
+					if err := metrics.CleanupMetricsHistory(conf.Telemetry.HistoryPath, conf.Telemetry.HistoryKeepInterval); err != nil {
 						l.Errorw("error during history metrics directory cleanup", zap.Error(err))
 						// not critical error, keep processing
 					}
 
 					l.Info("processing Pillars metrics files")
 					processMetrics(ctx, conf, pltClient)
-					l.Info(fmt.Sprintf("sleep for %d seconds", conf.TelemetryCheckInterval))
+					l.Info(fmt.Sprintf("sleep for %d seconds", conf.Telemetry.CheckInterval))
 				}
 			}
 		},
