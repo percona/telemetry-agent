@@ -54,11 +54,8 @@ jobs:
       - name: Install development tools
         run: make init
 
-      - name: Install binaries
-        run: make install
-
-      - name: Generate code
-        run: make gen
+      - name: Build binaries
+        run: make build
 
       - name: Run tests
         run: |
@@ -120,8 +117,8 @@ jobs:
       - name: Install tools
         run: make init
 
-      - name: Install binaries
-        run: make install
+      - name: Build binaries
+        run: make build
 
       - name: Format sources
         run: make format

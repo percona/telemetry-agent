@@ -2,6 +2,7 @@
 default: help
 
 GOPRIVATE=github.com/Percona-Lab/telemetry-agent,github.com/percona-platform/saas,github.com/percona
+GONOSUMDB=github.com/percona,github.com/percona-platform,github.com/percona-lab
 COMPONENT_VERSION ?= $(shell git describe --abbrev=0 --always)
 BUILD ?= $(shell date +%FT%T%z)
 TELEMETRY_AGENT_RELEASE_FULLCOMMIT ?= $(shell git rev-parse HEAD)
@@ -23,10 +24,6 @@ build:                ## Compile using plain go build
 	GOARCH=amd64 \
 	go build -a -ldflags="${GO_BUILD_LDFLAGS}" -o ./bin/telemetry-agent ./cmd/telemetry-agent
 
-gen:                    ## Generate code
-	go generate ./...
-	make format
-
 format:                 ## Format source code
 	go mod tidy
 	bin/gofumpt -l -w .
@@ -45,6 +42,6 @@ test-cover:             ## Run tests and collect per-package coverage informatio
 test-crosscover:        ## Run tests and collect cross-package coverage information
 	go test -race -timeout=10m -count=1 -coverprofile=crosscover.out -covermode=atomic -p=1 -coverpkg=./... ./...
 
-run:                    ## Run authed with race detector
+run:                    ## Run telemetry-agent with race detector
 	go run -race cmd/telemetry-agent/main.go \
 		--verbose --dev-mode
