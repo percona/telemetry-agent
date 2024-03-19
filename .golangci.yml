@@ -10,7 +10,7 @@ linters-settings:
             desc: Use "standard errors" instead
 
   goimports:
-    local-prefixes: github.com/percona-lab/telemetry-agent
+    local-prefixes: github.com/percona/telemetry-agent
 
   unparam:
     check-exported: true

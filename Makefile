@@ -1,14 +1,14 @@
 .PHONY: all build clean default help init test format check test-cover test-crosscover run
 default: help
 
-GOPRIVATE=github.com/Percona-Lab/telemetry-agent,github.com/percona-platform/saas,github.com/percona
-GONOSUMDB=github.com/percona,github.com/percona-platform,github.com/percona-lab
+GOPRIVATE=github.com/percona,github.com/percona-platform
+GONOSUMDB=github.com/percona,github.com/percona-platform
 COMPONENT_VERSION ?= $(shell git describe --abbrev=0 --always)
 BUILD ?= $(shell date +%FT%T%z)
 TELEMETRY_AGENT_RELEASE_FULLCOMMIT ?= $(shell git rev-parse HEAD)
-GO_BUILD_LDFLAGS = -X github.com/percona-lab/telemetry-agent/config.Version=${COMPONENT_VERSION} \
-	-X github.com/percona-lab/telemetry-agent/config.BuildDate=${BUILD} \
-	-X github.com/percona-lab/telemetry-agent/config.Commit=${TELEMETRY_AGENT_RELEASE_FULLCOMMIT} \
+GO_BUILD_LDFLAGS = -X github.com/percona/telemetry-agent/config.Version=${COMPONENT_VERSION} \
+	-X github.com/percona/telemetry-agent/config.BuildDate=${BUILD} \
+	-X github.com/percona/telemetry-agent/config.Commit=${TELEMETRY_AGENT_RELEASE_FULLCOMMIT} \
 	-extldflags -static
 
 help:                   ## Display this help message
@@ -27,7 +27,7 @@ build:                ## Compile using plain go build
 format:                 ## Format source code
 	go mod tidy
 	bin/gofumpt -l -w .
-	bin/goimports -local github.com/percona-lab/telemetry-agent -l -w .
+	bin/goimports -local github.com/percona/telemetry-agent -l -w .
 
 check:                  ## Run checks/linters for the whole project
 	bin/go-consistent -exclude=tools -pedantic ./...

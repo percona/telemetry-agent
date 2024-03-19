@@ -1,4 +1,4 @@
-module github.com/percona-lab/telemetry-agent
+module github.com/percona/telemetry-agent
 
 go 1.21
 
