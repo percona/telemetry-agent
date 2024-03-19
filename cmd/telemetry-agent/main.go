@@ -33,12 +33,12 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	platformClient "github.com/percona-lab/telemetry-agent/platform"
+	platformClient "github.com/percona/telemetry-agent/platform"
 
-	"github.com/percona-lab/telemetry-agent/config"
-	"github.com/percona-lab/telemetry-agent/logger"
-	"github.com/percona-lab/telemetry-agent/metrics"
-	"github.com/percona-lab/telemetry-agent/utils"
+	"github.com/percona/telemetry-agent/config"
+	"github.com/percona/telemetry-agent/logger"
+	"github.com/percona/telemetry-agent/metrics"
+	"github.com/percona/telemetry-agent/utils"
 )
 
 // Creates the minimum required directory structure for Telemetry Agent functionality.
