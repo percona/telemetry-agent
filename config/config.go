@@ -17,9 +17,10 @@
 package config
 
 import (
+	"net/url"
 	"path/filepath"
 
-	"github.com/spf13/viper"
+	"github.com/alecthomas/kong"
 )
 
 const (
@@ -34,49 +35,82 @@ const (
 	perconaTelemetryURLDefault     = "https://check.percona.com/v1/telemetry/GenericReport"
 )
 
+//nolint:gochecknoglobals
+var (
+	Version   string
+	Commit    string
+	BuildDate string
+)
+
+// TelemetryOpts represents the options for configuring telemetry paths on local filesystem.
+type TelemetryOpts struct {
+	RootPath            string `help:"define Percona telemetry root path on local filesystem." env:"PERCONA_TELEMETRY_ROOT_PATH" default:"/usr/local/percona/telemetry"`
+	PSMetricsPath       string `kong:"-"`
+	PSMDBMetricsPath    string `kong:"-"`
+	PXCMetricsPath      string `kong:"-"`
+	PGMetricsPath       string `kong:"-"`
+	HistoryPath         string `kong:"-"`
+	CheckInterval       int    `help:"define time interval in seconds for checking Percona Pillars telemetry." env:"PERCONA_TELEMETRY_CHECK_INTERVAL" default:"86400"`
+	HistoryKeepInterval int    `help:"define time interval in seconds for keeping old history telemetry files on filesystem." env:"PERCONA_TELEMETRY_HISTORY_KEEP_INTERVAL" default:"604800"`
+}
+
+// PlatformOpts represents the options for configuring communication with Percona Platform parameters.
+type PlatformOpts struct {
+	ResendTimeout int    `help:"define wait time in seconds to sleep before retrying request to Percona Platform in case of request failure." env:"PERCONA_TELEMETRY_RESEND_INTERVAL" default:"60"`
+	URL           string `help:"define Percona Platform URL for sending Pillars telemetry to." env:"PERCONA_TELEMETRY_URL" default:"https://check.percona.com/v1/telemetry/GenericReport"`
+}
+
+// LogOpts represents the options for configuring logging.
+type LogOpts struct {
+	Verbose bool `help:"enable verbose logging." default:"false"`
+	DevMode bool `help:"enable development mode logging." default:"false"`
+}
+
 // Config struct used for storing Telemetry Agent configuration parameters.
 type Config struct {
-	PSMetricsPath                string
-	PSMDBMetricsPath             string
-	PXCMetricsPath               string
-	PGMetricsPath                string
-	TelemetryCheckInterval       int
-	TelemetryResendTimeout       int
-	TelemetryHistoryPath         string
-	TelemetryHistoryKeepInterval int
-	PerconaTelemetryURL          string
+	Telemetry TelemetryOpts `embed:"" prefix:"telemetry."`
+	Platform  PlatformOpts  `embed:"" prefix:"platform."`
+	Log       LogOpts       `embed:"" prefix:"log."`
+	Version   bool          `help:"Show version and exit"`
 }
 
 // InitConfig parses Telemetry Agent configuration parameters.
 // If some parameters are not defined - default values are used instead.
 func InitConfig() Config {
-	// viper.SetEnvPrefix(perconaTelemetryEnvPrefix)
+	var conf Config
+	ctx := kong.Parse(&conf,
+		kong.Name("telemetry-agent"),
+		kong.Description("Percona Telemetry Agent gathers information from running Percona Pillar products, about the host and installed Percona software and sends it to Percona Platform."),
+		kong.UsageOnError(),
+		kong.ConfigureHelp(kong.HelpOptions{
+			Compact: true,
+		}),
+		kong.Vars{
+			"version": Version,
+		},
+	)
 
-	viper.MustBindEnv(telemetryRootPath)
-	viper.SetDefault(telemetryRootPath, filepath.Join("/usr", "local", "percona", "telemetry"))
-	rootPathValue := viper.GetString(telemetryRootPath)
-
-	viper.MustBindEnv(telemetryCheckInterval)
-	viper.SetDefault(telemetryCheckInterval, telemetryCheckIntervalDefault)
-
-	viper.MustBindEnv(telemetryResendInterval)
-	viper.SetDefault(telemetryResendInterval, telemetryResendIntervalDefault)
-
-	viper.MustBindEnv(telemetryHistoryKeepInterval)
-	viper.SetDefault(telemetryHistoryKeepInterval, historyKeepIntervalDefault)
-
-	viper.MustBindEnv(telemetryURL)
-	viper.SetDefault(telemetryURL, perconaTelemetryURLDefault)
-
-	return Config{
-		PSMetricsPath:                filepath.Join(rootPathValue, "ps"),
-		PSMDBMetricsPath:             filepath.Join(rootPathValue, "psmdb"),
-		PXCMetricsPath:               filepath.Join(rootPathValue, "pxc"),
-		PGMetricsPath:                filepath.Join(rootPathValue, "pg"),
-		TelemetryCheckInterval:       viper.GetInt(telemetryCheckInterval),
-		TelemetryHistoryPath:         filepath.Join(rootPathValue, "history"),
-		TelemetryResendTimeout:       viper.GetInt(telemetryResendInterval),
-		TelemetryHistoryKeepInterval: viper.GetInt(telemetryHistoryKeepInterval),
-		PerconaTelemetryURL:          viper.GetString(telemetryURL),
+	if len(conf.Telemetry.RootPath) == 0 {
+		ctx.Fatalf("No telemetry root path was specified. You must specify the path with the --telemetry.rootPath command argument or the PERCONA_TELEMETRY_ROOT_PATH environment variable")
 	}
+
+	// Validate URL
+	if len(conf.Platform.URL) == 0 {
+		ctx.Fatalf("No Percona Platform URL was specified for sending Pillars telemetry. You must specify the path with the --platform.url command argument or the PERCONA_TELEMETRY_URL environment variable")
+	}
+
+	u, err := url.ParseRequestURI(conf.Platform.URL)
+	if err != nil {
+		ctx.Fatalf("Invalid Percona Platform Telemetry URL: %q", err)
+	}
+	if u.Scheme == "" || u.Host == "" {
+		ctx.Fatalf("Invalid Percona Platform Telemetry URL: scheme or host is missed")
+	}
+
+	conf.Telemetry.PSMetricsPath = filepath.Join(conf.Telemetry.RootPath, "ps")
+	conf.Telemetry.PSMDBMetricsPath = filepath.Join(conf.Telemetry.RootPath, "psmdb")
+	conf.Telemetry.PXCMetricsPath = filepath.Join(conf.Telemetry.RootPath, "pxc")
+	conf.Telemetry.PGMetricsPath = filepath.Join(conf.Telemetry.RootPath, "pg")
+	conf.Telemetry.HistoryPath = filepath.Join(conf.Telemetry.RootPath, "history")
+	return conf
 }

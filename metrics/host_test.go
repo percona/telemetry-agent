@@ -25,14 +25,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestGetInstanceID(t *testing.T) { //nolint:tparallel
+func TestGetInstanceID(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
 		name              string
 		setupTestData     func(t *testing.T, tmpDir, instanceFile, instanceID string) // Setups necessary data for the test
-		postCheckTestData func(t *testing.T, tmpDir, instanceFile string)             // Post CleanupMetricsHistory function validation
-		wantErr           bool                                                        // Flags if we want the test to return an error
+		postCheckTestData func(t *testing.T, tmpDir, instanceFile string)             // Post function validation/cleanup
 		newID             bool
 	}{
 		{
@@ -49,8 +48,7 @@ func TestGetInstanceID(t *testing.T) { //nolint:tparallel
 				require.NoError(t, err)
 				require.Contains(t, string(data), "instanceId: ")
 			},
-			wantErr: false,
-			newID:   true,
+			newID: true,
 		},
 		{
 			name: "non_existing_file",
@@ -66,8 +64,7 @@ func TestGetInstanceID(t *testing.T) { //nolint:tparallel
 				require.NoError(t, err)
 				require.Contains(t, string(data), "instanceId: ")
 			},
-			wantErr: false,
-			newID:   true,
+			newID: true,
 		},
 		{
 			name: "empty_file",
@@ -86,8 +83,7 @@ func TestGetInstanceID(t *testing.T) { //nolint:tparallel
 				require.NoError(t, err)
 				require.Contains(t, string(data), "instanceId: ")
 			},
-			wantErr: false,
-			newID:   true,
+			newID: true,
 		},
 		{
 			name: "file_presents_single_line",
@@ -101,8 +97,7 @@ func TestGetInstanceID(t *testing.T) { //nolint:tparallel
 				checkDirectoryContentCount(t, tmpDir, 1)
 				checkFilesExist(t, tmpDir, instanceFile)
 			},
-			wantErr: false,
-			newID:   false,
+			newID: false,
 		},
 		{
 			name: "file_presents_multi_lines",
@@ -117,13 +112,15 @@ func TestGetInstanceID(t *testing.T) { //nolint:tparallel
 				checkDirectoryContentCount(t, tmpDir, 1)
 				checkFilesExist(t, tmpDir, instanceFile)
 			},
-			wantErr: false,
-			newID:   false,
+			newID: false,
 		},
 	}
 
-	for _, tt := range tests { //nolint:paralleltest
+	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			tmpDir, err := os.MkdirTemp("", "test")
 			require.NoError(t, err)
 			t.Cleanup(func() {
@@ -140,19 +137,205 @@ func TestGetInstanceID(t *testing.T) { //nolint:tparallel
 				tt.setupTestData(t, tmpDir, instanceFile, instanceID)
 			}
 
-			got, err := getInstanceID(filepath.Join(tmpDir, "telemetry_uuid"))
-			if tt.wantErr {
-				require.Error(t, err)
+			got := getInstanceID(filepath.Join(tmpDir, "telemetry_uuid"))
+			if tt.newID {
+				// in this case getInstanceID function generates new ID on its own.
+				require.NotEmpty(t, got)
 			} else {
-				require.NoError(t, err)
-				if tt.newID {
-					// in this case getInstanceID function generates new ID on its own.
-					require.NotEmpty(t, got)
-				} else {
-					require.Equal(t, instanceID, got)
-				}
+				require.Equal(t, instanceID, got)
 			}
 			tt.postCheckTestData(t, tmpDir, instanceFile)
+		})
+	}
+}
+
+// TestReadOSReleaseFile tests the function readOSReleaseFile.
+func TestReadOSReleaseFile(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name              string
+		setupTestData     func(t *testing.T, tmpDir, releaseFile string) // Setups necessary data for the test
+		postCheckTestData func(t *testing.T, tmpDir, releaseFile string) // Post function validation/cleanup
+		want              string
+	}{
+		{
+			name: "file_absent",
+			setupTestData: func(t *testing.T, tmpDir, releaseFile string) {
+				t.Helper()
+			},
+			postCheckTestData: func(t *testing.T, tmpDir, releaseFile string) {
+				t.Helper()
+				checkDirectoryContentCount(t, tmpDir, 0)
+				checkFilesAbsent(t, tmpDir, releaseFile)
+			},
+			want: unknownOS,
+		},
+		{
+			name: "file_exists",
+			setupTestData: func(t *testing.T, tmpDir, releaseFile string) {
+				t.Helper()
+				fileContent := `NAME="Oracle Linux Server"
+VERSION="9.2"
+ID="ol"
+ID_LIKE="fedora"
+VARIANT="Server"
+VARIANT_ID="server"
+VERSION_ID="9.2"
+PLATFORM_ID="platform:el9"
+PRETTY_NAME="Oracle Linux Server 9.2"
+ANSI_COLOR="0;31"
+CPE_NAME="cpe:/o:oracle:linux:9:2:server"
+HOME_URL="https://linux.oracle.com/"
+BUG_REPORT_URL="https://github.com/oracle/oracle-linux"
+
+ORACLE_BUGZILLA_PRODUCT="Oracle Linux 9"
+ORACLE_BUGZILLA_PRODUCT_VERSION=9.2
+ORACLE_SUPPORT_PRODUCT="Oracle Linux"
+ORACLE_SUPPORT_PRODUCT_VERSION=9.2
+`
+				err := os.WriteFile(filepath.Join(tmpDir, releaseFile), []byte(fileContent), 0o600)
+				require.NoError(t, err)
+			},
+			postCheckTestData: func(t *testing.T, tmpDir, releaseFile string) {
+				t.Helper()
+				checkDirectoryContentCount(t, tmpDir, 1)
+				checkFilesExist(t, tmpDir, releaseFile)
+			},
+			want: "Oracle Linux Server 9.2",
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			tmpDir, err := os.MkdirTemp("", "testOS")
+			require.NoError(t, err)
+			t.Cleanup(func() {
+				_ = os.RemoveAll(tmpDir)
+			})
+
+			releaseFile := "os-release"
+			tt.setupTestData(t, tmpDir, releaseFile)
+			require.Equal(t, tt.want, readOSReleaseFile(filepath.Join(tmpDir, releaseFile)))
+			tt.postCheckTestData(t, tmpDir, releaseFile)
+		})
+	}
+}
+
+// TestReadSystemReleaseFile tests the function readSystemReleaseFile.
+func TestReadSystemReleaseFile(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name              string
+		setupTestData     func(t *testing.T, tmpDir, releaseFile string) // Setups necessary data for the test
+		postCheckTestData func(t *testing.T, tmpDir, releaseFile string) // Post function validation/cleanup
+		want              string
+	}{
+		{
+			name: "file_absent",
+			setupTestData: func(t *testing.T, tmpDir, releaseFile string) {
+				t.Helper()
+			},
+			postCheckTestData: func(t *testing.T, tmpDir, releaseFile string) {
+				t.Helper()
+				checkDirectoryContentCount(t, tmpDir, 0)
+				checkFilesAbsent(t, tmpDir, releaseFile)
+			},
+			want: unknownOS,
+		},
+		{
+			name: "system_format",
+			setupTestData: func(t *testing.T, tmpDir, releaseFile string) {
+				t.Helper()
+				fileContent := "Oracle Linux Server release 9.2"
+				err := os.WriteFile(filepath.Join(tmpDir, releaseFile), []byte(fileContent), 0o600)
+				require.NoError(t, err)
+			},
+			postCheckTestData: func(t *testing.T, tmpDir, releaseFile string) {
+				t.Helper()
+				checkDirectoryContentCount(t, tmpDir, 1)
+				checkFilesExist(t, tmpDir, releaseFile)
+			},
+			want: "Oracle Linux Server release 9.2",
+		},
+		{
+			name: "redhat_format",
+			setupTestData: func(t *testing.T, tmpDir, releaseFile string) {
+				t.Helper()
+				fileContent := "Red Hat Enterprise Linux release 9.2 (Plow)"
+				err := os.WriteFile(filepath.Join(tmpDir, releaseFile), []byte(fileContent), 0o600)
+				require.NoError(t, err)
+			},
+			postCheckTestData: func(t *testing.T, tmpDir, releaseFile string) {
+				t.Helper()
+				checkDirectoryContentCount(t, tmpDir, 1)
+				checkFilesExist(t, tmpDir, releaseFile)
+			},
+			want: "Red Hat Enterprise Linux release 9.2 (Plow)",
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			tmpDir, err := os.MkdirTemp("", "testOS")
+			require.NoError(t, err)
+			t.Cleanup(func() {
+				_ = os.RemoveAll(tmpDir)
+			})
+
+			releaseFile := "system-release"
+			tt.setupTestData(t, tmpDir, releaseFile)
+			require.Equal(t, tt.want, readSystemReleaseFile(filepath.Join(tmpDir, releaseFile)))
+			tt.postCheckTestData(t, tmpDir, releaseFile)
+		})
+	}
+}
+
+func TestGetDeploymentInfo(t *testing.T) { //nolint:paralleltest
+	testCases := []struct {
+		name          string
+		setupTestData func(t *testing.T)
+		expected      string
+	}{
+		{
+			name: "no_env_defined",
+			setupTestData: func(t *testing.T) {
+				t.Helper()
+			},
+			expected: deploymentPackage,
+		},
+		{
+			name: "env_defined_empty",
+			setupTestData: func(t *testing.T) {
+				t.Helper()
+
+				t.Setenv(perconaDockerEnv, "")
+			},
+			expected: deploymentDocker,
+		},
+		{
+			name: "env_defined",
+			setupTestData: func(t *testing.T) {
+				t.Helper()
+
+				t.Setenv(perconaDockerEnv, "")
+			},
+			expected: deploymentDocker,
+		},
+	}
+
+	for _, tt := range testCases { //nolint:paralleltest
+		t.Run(tt.name, func(t *testing.T) {
+			tt.setupTestData(t)
+			got := getDeploymentInfo()
+			require.Equal(t, tt.expected, got)
 		})
 	}
 }

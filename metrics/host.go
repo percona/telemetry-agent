@@ -17,7 +17,6 @@ package metrics
 
 import (
 	"bufio"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -30,30 +29,35 @@ import (
 )
 
 const (
-	telemetryFile = "/usr/local/percona/telemetry_uuid"
+
 	// InstanceIDKey key name in telemetryFile with host instance ID.
-	InstanceIDKey = "instanceId"
+	InstanceIDKey     = "instanceId"
+	unknownOS         = "unknown"
+	telemetryFile     = "/usr/local/percona/telemetry_uuid"
+	deploymentPackage = "PACKAGE"
+	deploymentDocker  = "DOCKER"
+	perconaDockerEnv  = "FULL_PERCONA_VERSION"
 )
+
+// NOTE: the logic in this file is designed in a way "do our best to provide value", i.e. in case an error appears
+// it is not passed to upper level but is just printed into log stream and fallback value is applied:
+// - for instanceID it is random UUID
+// - for OS it is "unknown"
 
 // ScrapeHostMetrics gathers metrics about host where Telemetry Agent is running.
 // In addition, it checks Percona telemetry file and extracts instanceId value from it.
-func ScrapeHostMetrics() (*File, error) {
-	instanceID, err := getInstanceID(telemetryFile)
-	if err != nil {
-		return nil, fmt.Errorf("can't get Percona telemetry instanceID: %w", err)
-	}
-	m := &File{
+func ScrapeHostMetrics() *File {
+	f := &File{
 		Timestamp: time.Now(),
 		Filename:  telemetryFile,
 	}
-	m.Metrics = make(map[string]string)
-	m.Metrics[InstanceIDKey] = instanceID
+	f.Metrics = make(map[string]string)
+	f.Metrics[InstanceIDKey] = getInstanceID(telemetryFile)
+	f.Metrics["OS"] = getOSInfo()
+	f.Metrics["deployment"] = getDeploymentInfo()
+	f.Metrics["hardware_arch"] = getHardwareInfo()
 
-	m.Metrics["OS"] = getOSInfo()
-	m.Metrics["deployment"] = getDeploymentInfo()
-	m.Metrics["hardware_arch"] = getHardwareInfo()
-
-	return m, nil
+	return f
 }
 
 func customSplitFunc(data []byte, atEOF bool) (int, []byte, error) {
@@ -72,10 +76,11 @@ func customSplitFunc(data []byte, atEOF bool) (int, []byte, error) {
 	return 0, nil, nil
 }
 
-func getInstanceID(instanceFile string) (string, error) { //nolint:cyclop
+func getInstanceID(instanceFile string) string { //nolint:cyclop
 	l := zap.L().Sugar().With(zap.String("file", instanceFile))
 	l.Debug("processing Percona telemetry file")
 
+	newInstanceID := getRandomUUID()
 	// Notes: Percona telemetry file (/usr/local/percona/telemetry_uuid) or directory
 	// may be absent. In such a case this file shall be created with the following content:
 	// "instanceId: <uuid>"
@@ -87,43 +92,45 @@ func getInstanceID(instanceFile string) (string, error) { //nolint:cyclop
 	if os.IsNotExist(err) {
 		// directory is absent, creating
 		if err := os.MkdirAll(dirName, os.ModePerm); err != nil {
-			l.Errorw("can't create directory",
+			l.Errorw("can't create directory, fallback to random UUID",
 				zap.String("directory", dirName),
 				zap.Error(err))
-			return "", err
+			// fallback to random UUID
+			return newInstanceID
 		}
-		return createTelemetryFile(cleanInstanceFile)
+		createTelemetryFile(cleanInstanceFile, newInstanceID)
+		return newInstanceID
 	}
-
-	var instanceID string
 
 	file, err := os.Open(cleanInstanceFile)
 	// do not forget to close file.
-	defer func(file *os.File, fl *zap.SugaredLogger) {
-		err := file.Close()
-		if err != nil {
-			fl.Errorw("failed to close Percona telemetry file", zap.Error(err))
-		}
-	}(file, l)
+	defer func() {
+		_ = file.Close()
+	}()
 
 	if err != nil {
-		if !errors.Is(err, os.ErrNotExist) {
-			l.Errorw("failed to read Percona telemetry file, skipping", zap.Error(err))
-			return "", err
+		if !os.IsNotExist(err) {
+			l.Errorw("failed to read Percona telemetry file, fallback to random UUID", zap.Error(err))
+			// fallback to random UUID
+			return newInstanceID
 		}
 		// telemetry file is absent, fill values on our own
 		// and write back to file.
-		return createTelemetryFile(cleanInstanceFile)
+		createTelemetryFile(cleanInstanceFile, newInstanceID)
+		return newInstanceID
 	} else if st, err := file.Stat(); err != nil {
-		l.Errorw("failed to get file info", zap.Error(err))
-		return "", err
+		l.Errorw("failed to get file info, fallback to random UUID", zap.Error(err))
+		// fallback to random UUID
+		return getRandomUUID()
 	} else if st.Size() == 0 {
 		// file exists but is empty
-		return createTelemetryFile(cleanInstanceFile)
+		createTelemetryFile(cleanInstanceFile, newInstanceID)
+		return newInstanceID
 	}
 
 	// file exists and is not empty.
 	// get "instanceID" value from file.
+	var instanceID string
 	scanner := bufio.NewScanner(file)
 	scanner.Split(customSplitFunc)
 	for scanner.Scan() {
@@ -133,32 +140,63 @@ func getInstanceID(instanceFile string) (string, error) { //nolint:cyclop
 		}
 	}
 
-	if len(instanceID) == 0 {
-		l.Error("failed to get Percona telemetry instanceID, it is empty")
+	if err := scanner.Err(); err != nil {
+		l.Warnw("failed to read instanceId from Percona telemetry file, fallback to random UUID", zap.Error(err))
+		// fallback to random UUID
+		return newInstanceID
 	}
-	return instanceID, nil
+
+	if len(instanceID) == 0 {
+		l.Warn("failed to obtain Percona telemetry instanceID, fallback to random UUID")
+		// fallback to random UUID
+		return newInstanceID
+	}
+	return instanceID
 }
 
-func createTelemetryFile(instanceFile string) (string, error) {
-	instanceID := uuid.New().String()
+func getRandomUUID() string {
+	return uuid.New().String()
+}
+
+func createTelemetryFile(instanceFile, instanceID string) {
 	if err := os.WriteFile(instanceFile, []byte(fmt.Sprintf("%s: %s", InstanceIDKey, instanceID)), 0o600); err != nil {
 		zap.L().Sugar().With(zap.String("file", instanceFile)).
 			Errorw("failed to write Percona telemetry file", zap.Error(err))
-		return "", err
 	}
-	return instanceID, nil
 }
 
 func getDeploymentInfo() string {
-	return "PACKAGE"
+	if _, found := os.LookupEnv(perconaDockerEnv); found {
+		return deploymentDocker
+	}
+	return deploymentPackage
 }
 
 func getOSInfo() string {
-	gi, err := goInfo.GetInfo()
-	if err != nil {
-		return "unknown"
+	filePath := filepath.Join("/etc", "os-release")
+	if _, err := os.Stat(filePath); err == nil {
+		zap.L().Sugar().Debugw("getting OS info from file", zap.String("file", filePath))
+		return readOSReleaseFile(filePath)
 	}
-	return fmt.Sprintf("%s %s", gi.OS, gi.Core)
+
+	filePath = filepath.Join("/etc", "system-release")
+	if _, err := os.Stat(filePath); err == nil {
+		zap.L().Sugar().Debugw("getting OS info from file", zap.String("file", filePath))
+		return readSystemReleaseFile(filePath)
+	}
+
+	filePath = filepath.Join("/etc", "redhat-release")
+	if _, err := os.Stat(filePath); err == nil {
+		zap.L().Sugar().Debugw("getting OS info from file", zap.String("file", filePath))
+		return readSystemReleaseFile(filePath)
+	}
+
+	filePath = filepath.Join("/etc", "issue")
+	if _, err := os.Stat(filePath); err == nil {
+		zap.L().Sugar().Debugw("getting OS info from file", zap.String("file", filePath))
+		return readSystemReleaseFile(filePath)
+	}
+	return unknownOS
 }
 
 func getHardwareInfo() string {
@@ -167,4 +205,57 @@ func getHardwareInfo() string {
 		return "unknown"
 	}
 	return gi.Platform
+}
+
+func readOSReleaseFile(fileName string) string {
+	cleanFileName := filepath.Clean(fileName)
+	f, err := os.Open(cleanFileName)
+	if err != nil {
+		zap.L().Sugar().Errorw("failed to open OS file", zap.Error(err), zap.String("file", cleanFileName))
+		return unknownOS
+	}
+	defer func() {
+		_ = f.Close()
+	}()
+
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.HasPrefix(line, "PRETTY_NAME=") {
+			parts := strings.Split(line, "=")
+			if len(parts) >= 2 {
+				return strings.Trim(parts[1], `"`)
+			}
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		zap.L().Sugar().Warnw("error reading OS release file", zap.String("file", cleanFileName), zap.Error(err))
+		return unknownOS
+	}
+
+	return unknownOS
+}
+
+func readSystemReleaseFile(fileName string) string {
+	cleanFileName := filepath.Clean(fileName)
+	f, err := os.Open(cleanFileName)
+	if err != nil {
+		zap.L().Sugar().Errorw("failed to open system release file", zap.Error(err), zap.String("file", cleanFileName))
+		return unknownOS
+	}
+	defer func() {
+		_ = f.Close()
+	}()
+
+	scanner := bufio.NewScanner(f)
+	if scanner.Scan() {
+		return strings.Trim(scanner.Text(), `"`)
+	}
+
+	if err := scanner.Err(); err != nil {
+		zap.L().Sugar().Warnw("error reading system release file", zap.String("file", cleanFileName), zap.Error(err))
+		return unknownOS
+	}
+	return unknownOS
 }
