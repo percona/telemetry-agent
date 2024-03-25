@@ -30,8 +30,8 @@ func TestGetInstanceID(t *testing.T) {
 
 	tests := []struct {
 		name              string
-		setupTestData     func(t *testing.T, tmpDir, instanceFile, instanceID string) // Setups necessary data for the test
-		postCheckTestData func(t *testing.T, tmpDir, instanceFile string)             // Post function validation/cleanup
+		setupTestData     func(t *testing.T, tmpDir, instanceFile, instanceID string)     // Setups necessary data for the test
+		postCheckTestData func(t *testing.T, tmpDir, instanceFile, wantInstanceID string) // Post function validation/cleanup
 		newID             bool
 	}{
 		{
@@ -39,14 +39,11 @@ func TestGetInstanceID(t *testing.T) {
 			setupTestData: func(t *testing.T, tmpDir, instanceFile, instanceID string) {
 				t.Helper()
 			},
-			postCheckTestData: func(t *testing.T, tmpDir, instanceFile string) {
+			postCheckTestData: func(t *testing.T, tmpDir, instanceFile, wantInstanceID string) {
 				t.Helper()
 				checkDirectoryContentCount(t, tmpDir, 1)
 				checkFilesExist(t, tmpDir, instanceFile)
-
-				data, err := os.ReadFile(filepath.Clean(filepath.Join(tmpDir, instanceFile)))
-				require.NoError(t, err)
-				require.Contains(t, string(data), "instanceId: ")
+				checkInstanceIDInFile(t, tmpDir, instanceFile, wantInstanceID)
 			},
 			newID: true,
 		},
@@ -55,14 +52,11 @@ func TestGetInstanceID(t *testing.T) {
 			setupTestData: func(t *testing.T, tmpDir, instanceFile, instanceID string) {
 				t.Helper()
 			},
-			postCheckTestData: func(t *testing.T, tmpDir, instanceFile string) {
+			postCheckTestData: func(t *testing.T, tmpDir, instanceFile, wantInstanceID string) {
 				t.Helper()
 				checkDirectoryContentCount(t, tmpDir, 1)
 				checkFilesExist(t, tmpDir, instanceFile)
-
-				data, err := os.ReadFile(filepath.Clean(filepath.Join(tmpDir, instanceFile)))
-				require.NoError(t, err)
-				require.Contains(t, string(data), "instanceId: ")
+				checkInstanceIDInFile(t, tmpDir, instanceFile, wantInstanceID)
 			},
 			newID: true,
 		},
@@ -74,14 +68,11 @@ func TestGetInstanceID(t *testing.T) {
 				_, err := os.Create(filepath.Clean(filepath.Join(tmpDir, instanceFile)))
 				require.NoError(t, err)
 			},
-			postCheckTestData: func(t *testing.T, tmpDir, instanceFile string) {
+			postCheckTestData: func(t *testing.T, tmpDir, instanceFile, wantInstanceID string) {
 				t.Helper()
 				checkDirectoryContentCount(t, tmpDir, 1)
 				checkFilesExist(t, tmpDir, instanceFile)
-
-				data, err := os.ReadFile(filepath.Clean(filepath.Join(tmpDir, instanceFile)))
-				require.NoError(t, err)
-				require.Contains(t, string(data), "instanceId: ")
+				checkInstanceIDInFile(t, tmpDir, instanceFile, wantInstanceID)
 			},
 			newID: true,
 		},
@@ -92,12 +83,43 @@ func TestGetInstanceID(t *testing.T) {
 				err := os.WriteFile(filepath.Join(tmpDir, instanceFile), []byte(fmt.Sprintf("%s: %s", InstanceIDKey, instanceID)), 0o600)
 				require.NoError(t, err)
 			},
-			postCheckTestData: func(t *testing.T, tmpDir, instanceFile string) {
+			postCheckTestData: func(t *testing.T, tmpDir, instanceFile, wantInstanceID string) {
 				t.Helper()
 				checkDirectoryContentCount(t, tmpDir, 1)
 				checkFilesExist(t, tmpDir, instanceFile)
+				checkInstanceIDInFile(t, tmpDir, instanceFile, wantInstanceID)
 			},
 			newID: false,
+		},
+		{
+			name: "file_presents_single_line_key_corrupted",
+			setupTestData: func(t *testing.T, tmpDir, instanceFile, instanceID string) {
+				t.Helper()
+				err := os.WriteFile(filepath.Join(tmpDir, instanceFile), []byte(fmt.Sprintf("%scorrupt: %s", InstanceIDKey, instanceID)), 0o600)
+				require.NoError(t, err)
+			},
+			postCheckTestData: func(t *testing.T, tmpDir, instanceFile, wantInstanceID string) {
+				t.Helper()
+				checkDirectoryContentCount(t, tmpDir, 1)
+				checkFilesExist(t, tmpDir, instanceFile)
+				checkInstanceIDInFile(t, tmpDir, instanceFile, wantInstanceID)
+			},
+			newID: true,
+		},
+		{
+			name: "file_presents_single_line_value_corrupted",
+			setupTestData: func(t *testing.T, tmpDir, instanceFile, instanceID string) {
+				t.Helper()
+				err := os.WriteFile(filepath.Join(tmpDir, instanceFile), []byte(fmt.Sprintf("%s: %scorrupt", InstanceIDKey, instanceID)), 0o600)
+				require.NoError(t, err)
+			},
+			postCheckTestData: func(t *testing.T, tmpDir, instanceFile, wantInstanceID string) {
+				t.Helper()
+				checkDirectoryContentCount(t, tmpDir, 1)
+				checkFilesExist(t, tmpDir, instanceFile)
+				checkInstanceIDInFile(t, tmpDir, instanceFile, wantInstanceID)
+			},
+			newID: true,
 		},
 		{
 			name: "file_presents_multi_lines",
@@ -107,12 +129,45 @@ func TestGetInstanceID(t *testing.T) {
 				err := os.WriteFile(filepath.Join(tmpDir, instanceFile), []byte(data), 0o600)
 				require.NoError(t, err)
 			},
-			postCheckTestData: func(t *testing.T, tmpDir, instanceFile string) {
+			postCheckTestData: func(t *testing.T, tmpDir, instanceFile, wantInstanceID string) {
 				t.Helper()
 				checkDirectoryContentCount(t, tmpDir, 1)
 				checkFilesExist(t, tmpDir, instanceFile)
+				checkInstanceIDInFile(t, tmpDir, instanceFile, wantInstanceID)
 			},
 			newID: false,
+		},
+		{
+			name: "file_presents_multi_lines_key_corrupted",
+			setupTestData: func(t *testing.T, tmpDir, instanceFile, instanceID string) {
+				t.Helper()
+				data := fmt.Sprintf("PRODUCT_FAMILY_PS: 1\nPRODUCT_FAMILY_PXC: 1\nPRODUCT_FAMILY_PSMDB: 1\n%scorrupt: %s", InstanceIDKey, instanceID)
+				err := os.WriteFile(filepath.Join(tmpDir, instanceFile), []byte(data), 0o600)
+				require.NoError(t, err)
+			},
+			postCheckTestData: func(t *testing.T, tmpDir, instanceFile, wantInstanceID string) {
+				t.Helper()
+				checkDirectoryContentCount(t, tmpDir, 1)
+				checkFilesExist(t, tmpDir, instanceFile)
+				checkInstanceIDInFile(t, tmpDir, instanceFile, wantInstanceID)
+			},
+			newID: true,
+		},
+		{
+			name: "file_presents_multi_lines_value_corrupted",
+			setupTestData: func(t *testing.T, tmpDir, instanceFile, instanceID string) {
+				t.Helper()
+				data := fmt.Sprintf("PRODUCT_FAMILY_PS: 1\nPRODUCT_FAMILY_PXC: 1\nPRODUCT_FAMILY_PSMDB: 1\n%s: %scorrupt", InstanceIDKey, instanceID)
+				err := os.WriteFile(filepath.Join(tmpDir, instanceFile), []byte(data), 0o600)
+				require.NoError(t, err)
+			},
+			postCheckTestData: func(t *testing.T, tmpDir, instanceFile, wantInstanceID string) {
+				t.Helper()
+				checkDirectoryContentCount(t, tmpDir, 1)
+				checkFilesExist(t, tmpDir, instanceFile)
+				checkInstanceIDInFile(t, tmpDir, instanceFile, wantInstanceID)
+			},
+			newID: true,
 		},
 	}
 
@@ -141,10 +196,11 @@ func TestGetInstanceID(t *testing.T) {
 			if tt.newID {
 				// in this case getInstanceID function generates new ID on its own.
 				require.NotEmpty(t, got)
+				tt.postCheckTestData(t, tmpDir, instanceFile, got)
 			} else {
 				require.Equal(t, instanceID, got)
+				tt.postCheckTestData(t, tmpDir, instanceFile, instanceID)
 			}
-			tt.postCheckTestData(t, tmpDir, instanceFile)
 		})
 	}
 }

@@ -16,8 +16,10 @@
 package metrics
 
 import (
+	"bufio"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	platformReporter "github.com/percona-platform/saas/gen/telemetry/generic"
@@ -49,6 +51,28 @@ func checkFilesAbsent(t *testing.T, path string, files ...string) {
 		_, err := os.Stat(filePath)
 		require.Error(t, err)
 	}
+}
+
+func checkInstanceIDInFile(t *testing.T, path, fileName, wantInstanceID string) {
+	t.Helper()
+	filePath := filepath.Join(path, fileName)
+	file, err := os.Open(filepath.Clean(filePath))
+	require.NoError(t, err)
+	// do not forget to close file.
+	defer file.Close() //nolint:errcheck
+
+	var instanceID string
+	scanner := bufio.NewScanner(file)
+	scanner.Split(customSplitFunc)
+	for scanner.Scan() {
+		if parts := strings.Split(scanner.Text(), ":"); len(parts) == 2 && parts[0] == InstanceIDKey {
+			instanceID = strings.TrimSpace(parts[1])
+			break
+		}
+	}
+
+	require.NoError(t, scanner.Err())
+	require.Equal(t, wantInstanceID, instanceID)
 }
 
 func checkDirectoryContentCount(t *testing.T, tmpDir string, wantCount int) {
