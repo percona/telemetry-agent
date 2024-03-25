@@ -42,6 +42,8 @@ func TestWriteMetricsToHistory(t *testing.T) {
 			name: "non_existing_directory",
 			setupTestData: func(t *testing.T, tmpDir, token string, currTime time.Time) {
 				t.Helper()
+				// make directory absent
+				_ = os.RemoveAll(tmpDir)
 			},
 			postCheckTestData: func(t *testing.T, tmpDir, historyFile, token string, currTime time.Time, req *platformReporter.ReportRequest) {
 				t.Helper()
@@ -196,7 +198,7 @@ func TestWriteMetricsToHistory(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			tmpDir, err := os.MkdirTemp("", "test")
+			tmpDir, err := os.MkdirTemp("", "test-history")
 			require.NoError(t, err)
 			t.Cleanup(func() {
 				_ = os.RemoveAll(tmpDir)
@@ -205,12 +207,7 @@ func TestWriteMetricsToHistory(t *testing.T) {
 			currTime := time.Now()
 			token := uuid.New().String()
 			historyFile := fmt.Sprintf("%d-history.json", currTime.Unix())
-			if tt.name == "non_existing_directory" { //nolint:goconst
-				// make directory absent
-				_ = os.RemoveAll(tmpDir)
-			} else {
-				tt.setupTestData(t, tmpDir, token, currTime)
-			}
+			tt.setupTestData(t, tmpDir, token, currTime)
 
 			err = WriteMetricsToHistory(filepath.Join(tmpDir, historyFile), tt.request)
 			if tt.wantErr {
@@ -293,6 +290,8 @@ func TestCleanupMetricsHistory(t *testing.T) {
 			name: "non_existing_directory",
 			setupTestData: func(t *testing.T, tmpDir string) {
 				t.Helper()
+				// make directory absent
+				_ = os.RemoveAll(tmpDir)
 			},
 			postCheckTestData: func(t *testing.T, tmpDir string) {
 				t.Helper()
@@ -310,18 +309,13 @@ func TestCleanupMetricsHistory(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			tmpDir, err := os.MkdirTemp("", "test")
+			tmpDir, err := os.MkdirTemp("", "test-history")
 			require.NoError(t, err)
 			t.Cleanup(func() {
 				_ = os.RemoveAll(tmpDir)
 			})
 
-			if tt.name == "non_existing_directory" {
-				// make directory absent
-				_ = os.RemoveAll(tmpDir)
-			} else {
-				tt.setupTestData(t, tmpDir)
-			}
+			tt.setupTestData(t, tmpDir)
 
 			err = CleanupMetricsHistory(tmpDir, tt.keepInterval)
 			if tt.wantErr {
