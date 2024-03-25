@@ -91,8 +91,7 @@ func getInstanceID(instanceFile string) string { //nolint:cyclop
 	// In case of any error during file processing, new random instanceId is generated and
 	// is written into telemetry file.
 	dirName := filepath.Dir(cleanInstanceFile)
-	_, err := os.Stat(dirName)
-	if os.IsNotExist(err) {
+	if _, err := os.Stat(dirName); os.IsNotExist(err) {
 		// directory is absent, creating
 		if err := os.MkdirAll(dirName, os.ModePerm); err != nil {
 			l.Errorw("can't create directory, fallback to random UUID",
@@ -105,13 +104,9 @@ func getInstanceID(instanceFile string) string { //nolint:cyclop
 		return newInstanceID
 	}
 
-	file, err := os.Open(cleanInstanceFile)
-	// do not forget to close file.
-	defer func() {
-		_ = file.Close()
-	}()
-
-	if err != nil {
+	var file *os.File
+	var err error
+	if file, err = os.Open(cleanInstanceFile); err != nil {
 		if !os.IsNotExist(err) {
 			l.Errorw("failed to read Percona telemetry file, fallback to random UUID", zap.Error(err))
 			// fallback to random UUID
@@ -123,7 +118,12 @@ func getInstanceID(instanceFile string) string { //nolint:cyclop
 		l.Info("Percona telemetry file is absent, creating")
 		createTelemetryFile(cleanInstanceFile, newInstanceID)
 		return newInstanceID
-	} else if st, err := file.Stat(); err != nil || st.Size() == 0 {
+	}
+
+	// do not forget to close file.
+	defer file.Close() //nolint:errcheck
+
+	if st, err := file.Stat(); err != nil || st.Size() == 0 {
 		l.Errorw("failed to get file info, fallback to random UUID", zap.Error(err))
 		// fallback to random UUID
 		createTelemetryFile(cleanInstanceFile, newInstanceID)

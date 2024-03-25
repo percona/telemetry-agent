@@ -57,11 +57,9 @@ func checkInstanceIDInFile(t *testing.T, path, fileName, wantInstanceID string) 
 	t.Helper()
 	filePath := filepath.Join(path, fileName)
 	file, err := os.Open(filepath.Clean(filePath))
-	// do not forget to close file.
-	defer func() {
-		_ = file.Close()
-	}()
 	require.NoError(t, err)
+	// do not forget to close file.
+	defer file.Close() //nolint:errcheck
 
 	var instanceID string
 	scanner := bufio.NewScanner(file)
