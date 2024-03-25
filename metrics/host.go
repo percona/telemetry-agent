@@ -77,7 +77,8 @@ func customSplitFunc(data []byte, atEOF bool) (int, []byte, error) {
 }
 
 func getInstanceID(instanceFile string) string { //nolint:cyclop
-	l := zap.L().Sugar().With(zap.String("file", instanceFile))
+	cleanInstanceFile := filepath.Clean(instanceFile)
+	l := zap.L().Sugar().With(zap.String("file", cleanInstanceFile))
 	l.Debug("processing Percona telemetry file")
 
 	newInstanceID := getRandomUUID()
@@ -86,7 +87,9 @@ func getInstanceID(instanceFile string) string { //nolint:cyclop
 	// "instanceId: <uuid>"
 	// example:
 	// "instanceId: 1bed5f0d-cc3a-11ee-bd8a-c84bd64e0277".
-	cleanInstanceFile := filepath.Clean(instanceFile)
+	//
+	// In case of any error during file processing, new random instanceId is generated and
+	// is written into telemetry file.
 	dirName := filepath.Dir(cleanInstanceFile)
 	_, err := os.Stat(dirName)
 	if os.IsNotExist(err) {
@@ -112,18 +115,17 @@ func getInstanceID(instanceFile string) string { //nolint:cyclop
 		if !os.IsNotExist(err) {
 			l.Errorw("failed to read Percona telemetry file, fallback to random UUID", zap.Error(err))
 			// fallback to random UUID
+			createTelemetryFile(cleanInstanceFile, newInstanceID)
 			return newInstanceID
 		}
 		// telemetry file is absent, fill values on our own
 		// and write back to file.
+		l.Info("Percona telemetry file is absent, creating")
 		createTelemetryFile(cleanInstanceFile, newInstanceID)
 		return newInstanceID
-	} else if st, err := file.Stat(); err != nil {
+	} else if st, err := file.Stat(); err != nil || st.Size() == 0 {
 		l.Errorw("failed to get file info, fallback to random UUID", zap.Error(err))
 		// fallback to random UUID
-		return getRandomUUID()
-	} else if st.Size() == 0 {
-		// file exists but is empty
 		createTelemetryFile(cleanInstanceFile, newInstanceID)
 		return newInstanceID
 	}
@@ -143,12 +145,15 @@ func getInstanceID(instanceFile string) string { //nolint:cyclop
 	if err := scanner.Err(); err != nil {
 		l.Warnw("failed to read instanceId from Percona telemetry file, fallback to random UUID", zap.Error(err))
 		// fallback to random UUID
+		createTelemetryFile(cleanInstanceFile, newInstanceID)
 		return newInstanceID
 	}
 
-	if len(instanceID) == 0 {
+	if err := uuid.Validate(instanceID); err != nil {
+		// "instanceID" is read from file, but it is invalid.
 		l.Warn("failed to obtain Percona telemetry instanceID, fallback to random UUID")
 		// fallback to random UUID
+		createTelemetryFile(cleanInstanceFile, newInstanceID)
 		return newInstanceID
 	}
 	return instanceID
