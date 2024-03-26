@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -108,31 +107,32 @@ func parseMetricsFile(path string) (*File, error) { //nolint:cyclop
 	metrics := make(map[string]string)
 
 	for k, v := range tmpMetrics {
-		switch reflect.TypeOf(v).Kind() { //nolint:exhaustive
-		case reflect.String:
-			if vs, ok := v.(string); ok {
-				// handle special case when "true/false" are written as string
-				if strings.ToLower(vs) == "true" {
+		switch v := v.(type) {
+		case string:
+			// handle special case when "true/false" are written as string
+			if vb, err := strconv.ParseBool(v); err == nil {
+				if vb {
 					metrics[k] = "1"
-					continue
-				} else if strings.ToLower(vs) == "false" {
+				} else {
 					metrics[k] = "0"
-					continue
 				}
-				metrics[k] = vs
+				continue
 			}
-		case reflect.Bool:
-			if vb, ok := v.(bool); ok && vb {
+			metrics[k] = v
+		case bool:
+			if v {
 				metrics[k] = "1"
 			} else {
 				metrics[k] = "0"
 			}
+			continue
 		default:
+			// the rest of types shall be marshalled back to JSON.
 			s, err := json.Marshal(v)
 			if err != nil {
 				l.Errorw("error during marshalling metric value to JSON, skipping",
 					zap.Any("key", k), zap.Any("value", v), zap.Error(err))
-				return nil, err
+				continue
 			}
 			metrics[k] = string(s)
 		}
