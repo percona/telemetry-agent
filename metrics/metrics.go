@@ -84,24 +84,20 @@ func processMetricsDirectory(path string, productFamily platformReporter.Product
 	return toReturn, nil
 }
 
-func parseMetricsFile(path string) (*File, error) {
+func parseMetricsFile(path string) (*File, error) { //nolint:cyclop
 	cleanPath := filepath.Clean(path)
 	l := zap.L().Sugar().With(zap.String("file", cleanPath))
 
-	file, err := os.Open(cleanPath)
-	if err != nil {
+	var file *os.File
+	var err error
+	if file, err = os.Open(cleanPath); err != nil {
 		l.Errorw("error during opening metrics file", zap.Error(err))
 		return nil, err
 	}
-	defer func() {
-		err := file.Close()
-		if err != nil {
-			l.Warnw("error during closing metrics file", zap.Error(err))
-		}
-	}()
+	defer file.Close() //nolint:errcheck
 
 	// file has content in JSON format but the structure is not well known beforehand.
-	var tmpMetrics map[string]interface{}
+	var tmpMetrics map[string]any
 	err = json.NewDecoder(file).Decode(&tmpMetrics)
 	if err != nil {
 		l.Errorw("error during parsing metrics file, skipping", zap.Error(err))
@@ -111,14 +107,35 @@ func parseMetricsFile(path string) (*File, error) {
 	metrics := make(map[string]string)
 
 	for k, v := range tmpMetrics {
-		s, err := json.Marshal(v)
-		if err != nil {
-			l.Errorw("error during marshalling metric value to JSON, skipping",
-				zap.Any("value", v),
-				zap.Error(err))
-			return nil, err
+		switch v := v.(type) {
+		case string:
+			// handle special case when "true/false" are written as string
+			if vb, err := strconv.ParseBool(v); err == nil {
+				if vb {
+					metrics[k] = "1"
+				} else {
+					metrics[k] = "0"
+				}
+				continue
+			}
+			metrics[k] = v
+		case bool:
+			if v {
+				metrics[k] = "1"
+			} else {
+				metrics[k] = "0"
+			}
+			continue
+		default:
+			// the rest of types shall be marshalled back to JSON.
+			s, err := json.Marshal(v)
+			if err != nil {
+				l.Errorw("error during marshalling metric value to JSON, skipping",
+					zap.Any("key", k), zap.Any("value", v), zap.Error(err))
+				continue
+			}
+			metrics[k] = string(s)
 		}
-		metrics[k] = string(s)
 	}
 	// get timestamp from filename.
 	// filename has format: <timestamp>-<random token>.json
