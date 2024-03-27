@@ -140,9 +140,11 @@ func parseDpkgOutput(packageName, dpkgOutput string, dpkgErr error) (*Package, e
 
 		tokens := strings.Split(line, " ")
 		// The successful line for package shall be in format:
-		// <package name> <status> <version>.
+		// <package name> <status> [epoch:]<version>.
 		// Example:
 		// 'percona-xtrabackup-81 ii 8.1.0-1-1.jammy'
+		// or with epoch:
+		// 'percona-xtrabackup-81 ii 2:8.1.0-1-1.jammy'
 		if len(tokens) != 3 {
 			continue
 		}
@@ -153,8 +155,16 @@ func parseDpkgOutput(packageName, dpkgOutput string, dpkgErr error) (*Package, e
 
 		if tokens[1] == "ii" {
 			version = tokens[2]
-			// need to trim extra chars from release part
+			// need to trim extra chars from release part.
 			if pos := strings.LastIndex(version, "."); pos != -1 {
+				version = version[0:pos]
+			}
+			// need to trim epoch part if it is present.
+			if pos := strings.Index(version, ":"); pos != -1 {
+				version = version[pos+1:]
+			}
+			// need to trim +dfsg part if it is present.
+			if pos := strings.Index(version, "+dfsg"); pos != -1 {
 				version = version[0:pos]
 			}
 			break
@@ -252,12 +262,12 @@ func parseRpmOutput(packageName, rpmOutput string, rpmErr error) (*Package, erro
 func getDebianPackages() []string {
 	return []string{
 		// PS + PXC packages
-		"Percona-Server-server-5.7",         // deb
-		"Percona-Xtradb-Cluster-server-5.7", // deb
+		"Percona-Server-server-5.7",
+		"Percona-Xtradb-Cluster-server-5.7",
 		// PG
-		"percona-postgresql-14", // deb
-		"percona-postgresql-15", // deb
-		"percona-postgresql-16", // deb
+		"percona-postgresql-14",
+		"percona-postgresql-15",
+		"percona-postgresql-16",
 	}
 }
 
@@ -265,12 +275,12 @@ func getDebianPackages() []string {
 func getRhelPackages() []string {
 	return []string{
 		// PS + PXC packages
-		"Percona-Server-server-57",         // rpm
-		"Percona-XtraDB-Cluster-server-57", // rpm
+		"Percona-Server-server-57",
+		"Percona-XtraDB-Cluster-server-57",
 		// PG
-		"percona-postgresql14-server", // rpm
-		"percona-postgresql15-server", // rpm
-		"percona-postgresql16-server", // rpm
+		"percona-postgresql14-server",
+		"percona-postgresql15-server",
+		"percona-postgresql16-server",
 	}
 }
 

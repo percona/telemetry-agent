@@ -132,7 +132,18 @@ func TestParseDpkgOutput(t *testing.T) {
 		expectErr   error
 	}{
 		{
-			name:        "PackageInstalled",
+			name:        "package_installed_simple_version",
+			packageName: "percona-xtrabackup-81",
+			dpkgOutput:  "percona-xtrabackup-81 ii 8.1.0.jammy",
+			dpkgErr:     nil,
+			expectedPkg: &Package{
+				Name:    "percona-xtrabackup-81",
+				Version: "8.1.0",
+			},
+			expectErr: nil,
+		},
+		{
+			name:        "package_installed_full_version",
 			packageName: "percona-xtrabackup-81",
 			dpkgOutput:  "percona-xtrabackup-81 ii 8.1.0-1-1.jammy",
 			dpkgErr:     nil,
@@ -143,7 +154,51 @@ func TestParseDpkgOutput(t *testing.T) {
 			expectErr: nil,
 		},
 		{
-			name:        "PackageNotInstalled",
+			name:        "package_installed_simple_version_with_epoch",
+			packageName: "percona-xtrabackup-81",
+			dpkgOutput:  "percona-xtrabackup-81 ii 2:8.1.0.jammy",
+			dpkgErr:     nil,
+			expectedPkg: &Package{
+				Name:    "percona-xtrabackup-81",
+				Version: "8.1.0",
+			},
+			expectErr: nil,
+		},
+		{
+			name:        "package_installed_full_version_with_epoch",
+			packageName: "percona-xtrabackup-81",
+			dpkgOutput:  "percona-xtrabackup-81 ii 2:8.1.0-1-1.jammy",
+			dpkgErr:     nil,
+			expectedPkg: &Package{
+				Name:    "percona-xtrabackup-81",
+				Version: "8.1.0-1-1",
+			},
+			expectErr: nil,
+		},
+		{
+			name:        "package_installed_simple_version_with_dfsg",
+			packageName: "etcd",
+			dpkgOutput:  "etcd ii 3.3.25+dfsg-7ubuntu0.22.04.1",
+			dpkgErr:     nil,
+			expectedPkg: &Package{
+				Name:    "etcd",
+				Version: "3.3.25",
+			},
+			expectErr: nil,
+		},
+		{
+			name:        "package_installed_simple_version_with_epoch_with_dfsg",
+			packageName: "etcd",
+			dpkgOutput:  "etcd ii 3.3.25+dfsg-7ubuntu0.22.04.1",
+			dpkgErr:     nil,
+			expectedPkg: &Package{
+				Name:    "etcd",
+				Version: "3.3.25",
+			},
+			expectErr: nil,
+		},
+		{
+			name:        "package_not_installed",
 			packageName: "percona-xtrabackup-81",
 			dpkgOutput:  "no packages found matching percona-xtrabackup-81",
 			dpkgErr:     errors.New("no packages found matching percona-xtrabackup-81"),
@@ -151,7 +206,7 @@ func TestParseDpkgOutput(t *testing.T) {
 			expectErr:   errPackageNotFound,
 		},
 		{
-			name:        "DpkgError",
+			name:        "dpkg_error",
 			packageName: "percona-xtrabackup-81",
 			dpkgOutput:  "",
 			dpkgErr:     errors.New("dpkg-query: error while loading shared libraries: libapt-pkg.so.6.0: cannot open shared object file: No such file or directory"),
@@ -159,7 +214,7 @@ func TestParseDpkgOutput(t *testing.T) {
 			expectErr:   errors.New("dpkg-query: error while loading shared libraries: libapt-pkg.so.6.0: cannot open shared object file: No such file or directory"),
 		},
 		{
-			name:        "InvalidDpkgOutput",
+			name:        "invalid_dpkg_output",
 			packageName: "percona-xtrabackup-81",
 			dpkgOutput:  "percona-xtrabackup-81 ii",
 			dpkgErr:     nil,
@@ -167,7 +222,7 @@ func TestParseDpkgOutput(t *testing.T) {
 			expectErr:   errPackageNotFound,
 		},
 		{
-			name:        "PackageUnknown",
+			name:        "package_unknown",
 			packageName: "percona-xtrabackup-81",
 			dpkgOutput:  "percona-xtrabackup-81 un",
 			dpkgErr:     nil,
@@ -205,7 +260,7 @@ func TestParseRpmOutput(t *testing.T) {
 		expectErr   error
 	}{
 		{
-			name:        "PackageInstalled",
+			name:        "package_installed",
 			packageName: "percona-xtradb-cluster-server",
 			rpmOutput:   "percona-xtradb-cluster-server 8.0.35 27.1.el8",
 			rpmErr:      nil,
@@ -216,7 +271,7 @@ func TestParseRpmOutput(t *testing.T) {
 			expectErr: nil,
 		},
 		{
-			name:        "PackageNotInstalled",
+			name:        "package_not_installed",
 			packageName: "percona-xtradb-cluster-server",
 			rpmOutput:   "package percona-xtradb-cluster-server is not installed",
 			rpmErr:      errors.New("package percona-xtradb-cluster-server is not installed"),
@@ -224,7 +279,7 @@ func TestParseRpmOutput(t *testing.T) {
 			expectErr:   errPackageNotFound,
 		},
 		{
-			name:        "RpmError",
+			name:        "rpm_error",
 			packageName: "percona-xtradb-cluster-server",
 			rpmOutput:   "",
 			rpmErr:      errors.New("rpm: -x: unknown option"),
@@ -232,7 +287,7 @@ func TestParseRpmOutput(t *testing.T) {
 			expectErr:   errors.New("rpm: -x: unknown option"),
 		},
 		{
-			name:        "InvalidRpmOutput",
+			name:        "invalid_rpm_output",
 			packageName: "percona-xtradb-cluster-server",
 			rpmOutput:   "'percona-xtradb-cluster-server 8.0.35'",
 			rpmErr:      nil,
