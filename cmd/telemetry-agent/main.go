@@ -110,7 +110,7 @@ func processPillarsMetrics(c config.Config) []*metrics.File {
 }
 
 // The main function for processing Percona Pillar's telemetry and sending it to Percona Platform.
-func processMetrics(ctx context.Context, c config.Config, platformClient *platformClient.Client) {
+func processMetrics(ctx context.Context, c config.Config, platformClient *platformClient.Client) { //nolint:cyclop
 	l := zap.L().Sugar()
 
 	l.Info("scraping host metrics")
@@ -134,16 +134,16 @@ func processMetrics(ctx context.Context, c config.Config, platformClient *platfo
 		// prepare request to Percona Platform
 		reportMetrics := make([]*platformReporter.GenericReport_Metric, 0, 1)
 
-		// copy pillar metrics to Platform request
-		for k, v := range pillarM.Metrics {
+		// copy host metrics to Platform request
+		for k, v := range hostMetrics.Metrics {
 			reportMetrics = append(reportMetrics, &platformReporter.GenericReport_Metric{
 				Key:   k,
 				Value: v,
 			})
 		}
 
-		// enrich Platform request with host metrics
-		for k, v := range hostMetrics.Metrics {
+		// copy pillar metrics to Platform request
+		for k, v := range pillarM.Metrics {
 			reportMetrics = append(reportMetrics, &platformReporter.GenericReport_Metric{
 				Key:   k,
 				Value: v,
@@ -164,12 +164,34 @@ func processMetrics(ctx context.Context, c config.Config, platformClient *platfo
 
 		metricsLogger := l.With(zap.String("file", pillarM.Filename))
 		platformCtx := platformLogger.GetContextWithLogger(ctx, metricsLogger.Desugar())
-		// send request to Percona Platform
-		if err := platformClient.SendTelemetry(platformCtx, "", report); err != nil {
-			if !errors.Is(err, context.Canceled) {
-				metricsLogger.Errorw("error during sending telemetry, will try on next iteration", zap.Error(err))
+		err := func() error {
+			funcCtx, cancel := context.WithTimeout(platformCtx, 60*time.Second)
+			defer cancel()
+			// send request to Percona Platform
+			return platformClient.SendTelemetry(funcCtx, "", report)
+		}()
+		if err != nil {
+			switch {
+			case errors.Is(err, context.DeadlineExceeded):
+				// Percona telemetry platform is not available, we can't send data.
+				// we can't continue this particular metrics file processing because we don't know what was sent and what was not.
+				// try to send this metrics file again on next iteration.
+				// pass over to next metrics file.
+				metricsLogger.Warnw("error during sending telemetry, will try on next iteration", zap.Error(err))
+				continue
+			case errors.Is(err, context.Canceled):
+				// main process loop is terminated, no need to continue.
+				// we can't continue this particular metrics file processing because we don't know what was sent and what was not.
+				// try to send this metrics file again on next iteration.
+				return
+			default:
+				// any other errors during sending data.
+				// we can't continue this particular metrics file processing because we don't know what was sent and what was not.
+				// try to send this metrics file again on next iteration.
+				// pass over to next metrics file.
+				metricsLogger.Warnw("error during sending telemetry, will try on next iteration", zap.Error(err))
+				continue
 			}
-			continue
 		}
 
 		// write sent data to history file

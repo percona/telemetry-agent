@@ -17,7 +17,6 @@
 package platform
 
 import (
-	"bytes"
 	"context"
 	"crypto/tls"
 	"errors"
@@ -29,9 +28,8 @@ import (
 
 	"github.com/go-resty/resty/v2"
 	genericv1 "github.com/percona-platform/saas/gen/telemetry/generic"
-	"google.golang.org/protobuf/encoding/protojson"
-
 	"github.com/percona-platform/saas/pkg/logger"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 // ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
@@ -156,13 +154,16 @@ func New(opts ...Option) *Client {
 func (c *Client) SendTelemetry(ctx context.Context, accessToken string, report *genericv1.ReportRequest) error {
 	const path = "/v1/telemetry/GenericReport"
 
-	body, err := protojson.Marshal(report)
-	if err != nil {
-		return err
+	if report == nil {
+		return errors.New("telemetry report is nil")
 	}
 
-	err = c.sendPostRequest(ctx, path, accessToken, bytes.NewReader(body), nil)
+	body, err := protojson.Marshal(report)
 	if err != nil {
+		return fmt.Errorf("failed to marshal telemetry request: %w", err)
+	}
+
+	if err = c.sendPostRequest(ctx, path, accessToken, body, nil); err != nil {
 		return fmt.Errorf("failed to send telemetry data: %w", err)
 	}
 
