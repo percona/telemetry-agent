@@ -205,6 +205,7 @@ func (c *Client) sendPostRequest(ctx context.Context, path, accessToken string, 
 
 	if requestBody != nil {
 		req.SetBody(requestBody)
+		req.Header.Set("Content-Type", "application/json")
 	}
 
 	if responseBody != nil {
