@@ -71,7 +71,8 @@ func createPerconaPlatformClient(c config.Config) (*platformClient.Client, error
 		platformClient.WithBaseURL(u.Scheme+"://"+u.Host),
 		platformClient.WithLogFullRequest(),
 		platformClient.WithResendTimeout(time.Second*time.Duration(c.Platform.ResendTimeout)),
-		platformClient.WithRetryCount(5)), nil
+		platformClient.WithRetryCount(5),
+		platformClient.WithClientTimeout(60*time.Second)), nil
 }
 
 func processPillarsMetrics(c config.Config) []*metrics.File {
@@ -164,28 +165,16 @@ func processMetrics(ctx context.Context, c config.Config, platformClient *platfo
 
 		metricsLogger := l.With(zap.String("file", pillarM.Filename))
 		platformCtx := platformLogger.GetContextWithLogger(ctx, metricsLogger.Desugar())
-		err := func() error {
-			funcCtx, cancel := context.WithTimeout(platformCtx, 60*time.Second)
-			defer cancel()
-			// send request to Percona Platform
-			return platformClient.SendTelemetry(funcCtx, "", report)
-		}()
-		if err != nil {
+		// send request to Percona Platform
+		if err := platformClient.SendTelemetry(platformCtx, "", report); err != nil {
 			switch {
-			case errors.Is(err, context.DeadlineExceeded):
-				// Percona telemetry platform is not available, we can't send data.
-				// we can't continue this particular metrics file processing because we don't know what was sent and what was not.
-				// try to send this metrics file again on next iteration.
-				// pass over to next metrics file.
-				metricsLogger.Warnw("error during sending telemetry, will try on next iteration", zap.Error(err))
-				continue
 			case errors.Is(err, context.Canceled):
 				// main process loop is terminated, no need to continue.
 				// we can't continue this particular metrics file processing because we don't know what was sent and what was not.
 				// try to send this metrics file again on next iteration.
 				return
 			default:
-				// any other errors during sending data.
+				// any other errors during sending data (including request timeout).
 				// we can't continue this particular metrics file processing because we don't know what was sent and what was not.
 				// try to send this metrics file again on next iteration.
 				// pass over to next metrics file.
