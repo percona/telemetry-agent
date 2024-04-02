@@ -107,7 +107,7 @@ func CleanupMetricsHistory(historyDirectoryPath string, keepInterval int) error 
 		}
 
 		fl.Debug("removing file")
-		if err := os.Remove(filepath.Join(cleanHistoryPath, file.Name())); err != nil {
+		if err := os.Remove(filepath.Clean(filepath.Join(cleanHistoryPath, file.Name()))); err != nil {
 			fl.Errorw("error removing metric file, skipping", zap.Error(err))
 			continue
 		}
