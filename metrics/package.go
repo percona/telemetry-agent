@@ -59,9 +59,10 @@ func ScrapeInstalledPackages(ctx context.Context) []*Package {
 
 	switch {
 	case isDebianFamily(localOs):
-		pkgFunc = queryDpkg
+		pkgFunc = queryDebian
+		pkgList = append(pkgList, getDebianPerconaPackages()...)
 	case isRHELFamily(localOs):
-		pkgFunc = queryRpm
+		pkgFunc = queryRhel
 	default:
 		zap.L().Sugar().Warnw("unsupported package system", zap.String("OS", localOs))
 		return toReturn
@@ -106,7 +107,7 @@ func isRHELFamily(name string) bool {
 	return false
 }
 
-func queryDpkg(ctx context.Context, packageNamePattern string) ([]*Package, error) {
+func queryDebian(ctx context.Context, packageNamePattern string) ([]*Package, error) {
 	args := []string{"dpkg-query", "-f", "'${db:Status-Abbrev}|${binary:Package}|${source:Version}\n'", "-W", packageNamePattern}
 	zap.L().Sugar().Debugw("executing command", zap.String("cmd", strings.Join(args, " ")))
 
@@ -115,10 +116,10 @@ func queryDpkg(ctx context.Context, packageNamePattern string) ([]*Package, erro
 
 	cmd := exec.CommandContext(cmdCtx, args[0], args[1:]...) // #nosec G204
 	outputB, err := cmd.CombinedOutput()
-	return parseDpkgOutput(packageNamePattern, outputB, err)
+	return parseDebianOutput(packageNamePattern, outputB, err)
 }
 
-func parseDpkgOutput(packageNamePattern string, dpkgOutput []byte, dpkgErr error) ([]*Package, error) { //nolint:cyclop
+func parseDebianOutput(packageNamePattern string, dpkgOutput []byte, dpkgErr error) ([]*Package, error) { //nolint:cyclop
 	if dpkgErr != nil {
 		if strings.Contains(string(dpkgOutput), "no packages found matching") {
 			// package is not installed
@@ -165,7 +166,7 @@ func parseDpkgOutput(packageNamePattern string, dpkgOutput []byte, dpkgErr error
 		}
 
 		// process package version
-		pkgVersion = processDebianPackageVersion(packageNamePattern, pkgVersion)
+		pkgVersion = processDebianPackageVersion(pkgVersion, isPerconaPackage(packageNamePattern))
 		if len(pkgVersion) == 0 {
 			continue
 		}
@@ -198,16 +199,7 @@ func processDebianPackageName(pkgName string) string {
 	return strings.Split(pkgName, ":")[0]
 }
 
-func isPerconaPackage(packageNamePattern string) bool {
-	for _, pkgPattern := range getCommonPerconaPackages() {
-		if packageNamePattern == pkgPattern {
-			return true
-		}
-	}
-	return false
-}
-
-func processDebianPackageVersion(packageNamePattern, pkgVersion string) string {
+func processDebianPackageVersion(pkgVersion string, isPerconaPackage bool) string {
 	// Debian package version have format:
 	// https://www.debian.org/doc/debian-policy/ch-controlfields.html#version
 	// [epoch:]upstream_version[-debian_revision]
@@ -220,7 +212,7 @@ func processDebianPackageVersion(packageNamePattern, pkgVersion string) string {
 	// upstream_version-debian_revision = '8.2.0-1-1.jammy'
 	// here '.jammy' is distribution name.
 
-	if isPerconaPackage(packageNamePattern) {
+	if isPerconaPackage {
 		// Percona's package version case.
 		// need to trim distribution name from the end.
 		if pos := strings.LastIndex(pkgVersion, "."); pos != -1 {
@@ -254,8 +246,12 @@ func processDebianPackageVersion(packageNamePattern, pkgVersion string) string {
 	return pkgVersion
 }
 
-func queryRpm(ctx context.Context, packageNamePattern string) ([]*Package, error) {
-	args := []string{"rpm", "-a", "-q", packageNamePattern, "--queryformat", "'%{NAME}|%{VERSION}|%{RELEASE}\n'"}
+func queryRhel(ctx context.Context, packageNamePattern string) ([]*Package, error) {
+	args, err := getRhelPackageManager()
+	if err != nil {
+		return nil, err
+	}
+	args = append(args, "--qf", "'%{name}|%{version}|%{release}'", "--installed", packageNamePattern)
 	zap.L().Sugar().Debugw("executing command", zap.String("cmd", strings.Join(args, " ")))
 
 	cmdCtx, cancel := context.WithTimeout(ctx, pkgResultTimeout)
@@ -263,10 +259,24 @@ func queryRpm(ctx context.Context, packageNamePattern string) ([]*Package, error
 
 	cmd := exec.CommandContext(cmdCtx, args[0], args[1:]...) // #nosec G204
 	outputB, err := cmd.CombinedOutput()
-	return parseRpmOutput(packageNamePattern, outputB, err)
+	return parseRhelOutput(packageNamePattern, outputB, err)
 }
 
-func parseRpmOutput(packageNamePattern string, rpmOutput []byte, rpmErr error) ([]*Package, error) {
+func getRhelPackageManager() ([]string, error) {
+	pkgMngs := [][]string{
+		{"dnf", "repoquery"},
+		{"yum", "repoquery"},
+		{"repoquery"},
+	}
+	for _, pkgMng := range pkgMngs {
+		if _, err := exec.LookPath(pkgMng[0]); err == nil {
+			return pkgMng, nil
+		}
+	}
+	return nil, errors.New("no package manager found")
+}
+
+func parseRhelOutput(packageNamePattern string, rpmOutput []byte, rpmErr error) ([]*Package, error) {
 	if rpmErr != nil {
 		// in case of package not found, rpm doesn't return error.
 		// So if error is returned - something went wrong.
@@ -296,7 +306,7 @@ func parseRpmOutput(packageNamePattern string, rpmOutput []byte, rpmErr error) (
 		}
 
 		pkgName, pkgVersion, pkgRelease := tokens[0], tokens[1], tokens[2]
-		version := processRhelPackageVersion(packageNamePattern, pkgVersion, pkgRelease)
+		version := processRhelPackageVersion(pkgVersion, pkgRelease, isPerconaPackage(packageNamePattern))
 
 		if len(version) > 0 {
 			toReturn = append(toReturn, &Package{
@@ -318,7 +328,7 @@ func parseRpmOutput(packageNamePattern string, rpmOutput []byte, rpmErr error) (
 	return toReturn, nil
 }
 
-func processRhelPackageVersion(packageNamePattern, pkgVersion, pkgRelease string) string {
+func processRhelPackageVersion(pkgVersion, pkgRelease string, isPerconaPackage bool) string {
 	// Rhel package has a separate fields for version and release values:
 	// Example:
 	// version = '2.5', '8.1.0'
@@ -337,7 +347,7 @@ func processRhelPackageVersion(packageNamePattern, pkgVersion, pkgRelease string
 		pkgVersion = pkgVersion[0:pos]
 	}
 
-	if isPerconaPackage(packageNamePattern) && len(pkgRelease) != 0 {
+	if isPerconaPackage && len(pkgRelease) != 0 {
 		pkgRelease = strings.ReplaceAll(pkgRelease, ".", "-")
 		// need to join them with '-' separator.
 		return fmt.Sprintf("%s-%s", pkgVersion, pkgRelease)
@@ -345,13 +355,33 @@ func processRhelPackageVersion(packageNamePattern, pkgVersion, pkgRelease string
 	return pkgVersion
 }
 
+func isPerconaPackage(packageNamePattern string) bool {
+	if len(packageNamePattern) == 0 {
+		return false
+	}
+
+	perconaPkgList := append(getCommonPerconaPackages(), getDebianPerconaPackages()...)
+	for _, pkgPattern := range perconaPkgList {
+		if packageNamePattern == pkgPattern {
+			return true
+		}
+	}
+	return false
+}
+
 // getCommonPerconaPackages returns list of Percona package patterns that have the same names both on Debian and RHEL systems.
 func getCommonPerconaPackages() []string {
 	return []string{
-		"Percona-*",
 		"percona-*",
 		"proxysql*",
 		"pmm*",
+	}
+}
+
+// getDebianPerconaPackages returns list of Percona package patterns that are unique for Debian systems.
+func getDebianPerconaPackages() []string {
+	return []string{
+		"Percona-*",
 	}
 }
 

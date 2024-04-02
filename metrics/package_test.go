@@ -344,7 +344,7 @@ ii |pmm2-client|2.41.2-6.1.jammy
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			pkg, err := parseDpkgOutput(tt.packageNamePattern, tt.dpkgOutput, tt.dpkgErr)
+			pkg, err := parseDebianOutput(tt.packageNamePattern, tt.dpkgOutput, tt.dpkgErr)
 			if tt.expectErr != nil {
 				require.ErrorAs(t, err, &tt.expectErr)
 			}
@@ -529,7 +529,7 @@ proxysql2|2.5.5|1.2.el9`),
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			pkg, err := parseRpmOutput(tt.packageNamePattern, tt.rpmOutput, tt.rpmErr)
+			pkg, err := parseRhelOutput(tt.packageNamePattern, tt.rpmOutput, tt.rpmErr)
 			if tt.expectErr != nil {
 				require.ErrorAs(t, err, &tt.expectErr)
 			}
@@ -673,7 +673,7 @@ percona-toolkit|3.5.7|1.el9
 			t.Parallel()
 
 			// dpkg
-			dpkgPkgList, err := parseDpkgOutput(tt.packageNamePattern, tt.dpkgOutput, tt.dpkgErr)
+			dpkgPkgList, err := parseDebianOutput(tt.packageNamePattern, tt.dpkgOutput, tt.dpkgErr)
 			if tt.expectedDpkgErr == nil {
 				require.NoError(t, err)
 			} else {
@@ -685,7 +685,7 @@ percona-toolkit|3.5.7|1.el9
 			}
 
 			// rpm
-			rpmPkgList, err := parseRpmOutput(tt.packageNamePattern, tt.rpmOutput, tt.expectedRpmErr)
+			rpmPkgList, err := parseRhelOutput(tt.packageNamePattern, tt.rpmOutput, tt.expectedRpmErr)
 			if tt.expectedRpmErr == nil {
 				require.NoError(t, err)
 			} else {
