@@ -40,7 +40,7 @@ func SetupGlobal(opts *GlobalOpts) {
 		Development:      false,
 		Encoding:         "json",
 		EncoderConfig:    zap.NewProductionEncoderConfig(),
-		OutputPaths:      []string{"stderr"},
+		OutputPaths:      []string{"stdout"},
 		ErrorOutputPaths: []string{"stderr"},
 	}
 	cfg.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
