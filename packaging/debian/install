@@ -1,0 +1,4 @@
+percona-telemetry-agent /usr/bin/
+default/percona-telemetry-agent /etc/default/
+percona-telemetry-agent.service /lib/systemd/system/
+LICENSE /usr/share/doc/percona-telemetry-agent/

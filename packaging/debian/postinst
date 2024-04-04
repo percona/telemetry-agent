@@ -1,0 +1,8 @@
+#!/bin/sh
+
+#DEBHELPER#
+mkdir -p /var/log/percona
+systemctl daemon-reload
+systemctl enable percona-telemetry-agent.service || true
+systemctl start percona-telemetry-agent.service
+exit 0
