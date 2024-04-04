@@ -1,0 +1,17 @@
+[Unit]
+Description=percona-telemetry-agent
+After=time-sync.target network.target
+
+[Service]
+EnvironmentFile=-/etc/sysconfig/percona-telemetry-agent
+Type=simple
+User=root
+Group=root
+PermissionsStartOnly=true
+ExecStart=/usr/bin/percona-telemetry-agent
+Restart=always
+StandardOutput=append:/var/log/percona/telemetry-agent.log
+StandardError=append:/var/log/percona/telemetry-agent-error.log
+
+[Install]
+WantedBy=multi-user.target

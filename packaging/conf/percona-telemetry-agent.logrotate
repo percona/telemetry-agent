@@ -1,0 +1,14 @@
+/var/log/percona/telemetry-agent*.log {
+    # Rotate log weekly
+    weekly
+    # Keep 4 rotated logs
+    rotate 4
+    # Compress rotated logs
+    compress
+    # Add a timestamp to rotated logs
+    dateext
+    # Don't rotate the log if it's empty
+    notifempty
+    # Rotate old logs and create new ones with the same permissions and owner/group
+    copytruncate
+}

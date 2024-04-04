@@ -1,0 +1,9 @@
+#!/bin/sh
+
+if [ ! -d /run/percona-telemetry-agent ]; then
+    install -m 0755 -d -oroot -groot /run/percona-telemetry-agent
+fi
+
+#DEBHELPER#
+
+exit 0

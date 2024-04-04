@@ -1,0 +1,12 @@
+#!/bin/bash
+
+set -e
+# Stop the service if it's running
+if [ -x "/bin/systemctl" ]; then
+    echo "Stopping Percona Telemetry Agent service..."
+    /bin/systemctl stop percona-telemetry-agent.service || true
+fi
+
+set +e
+
+exit 0
