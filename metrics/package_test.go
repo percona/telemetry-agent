@@ -16,7 +16,6 @@
 package metrics
 
 import (
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -96,246 +95,68 @@ var osNames = []struct { //nolint:gochecknoglobals
 	},
 }
 
-func TestIsDebianFamily(t *testing.T) {
-	t.Parallel()
-
-	for _, tt := range osNames {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			require.Equal(t, tt.expectedDebian, isDebianFamily(tt.osName))
-		})
-	}
-}
-
-func TestIsRHELFamily(t *testing.T) {
-	t.Parallel()
-
-	for _, tt := range osNames {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			require.Equal(t, tt.expectedRhel, isRHELFamily(tt.osName))
-		})
-	}
-}
-
-func TestParseDpkgOutput(t *testing.T) {
+func TestIsPerconaPackage(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name               string
-		packageNamePattern string
-		dpkgOutput         []byte
-		dpkgErr            error
-		expectedPkgList    []*Package
-		expectErr          error
+		name     string
+		pattern  string
+		expected bool
 	}{
 		{
-			name:               "pattern_percona_full_output",
-			packageNamePattern: "percona-*",
-			dpkgOutput: []byte(`ii |percona-backup-mongodb|2.3.1-1.jammy
-ii |percona-mongodb-mongosh|2.1.1.jammy
-ii |percona-mysql-router|8.2.0-1-1.jammy
-ii |percona-mysql-shell:amd64|8.2.0-1-1.jammy
-ii |percona-pg-stat-monitor16|1:2.0.4-2.jammy
-iHR |percona-pgbouncer|1:1.22.0-1.jammy
-ii |percona-postgresql-16|2:16.2-1.jammy
-ii |percona-postgresql-16-pgaudit|1:16.0-1.jammy
-iHR |percona-postgresql-16-wal2json|1:2.5-7.jammy
-ii |percona-release|1.0-27.generic
-ii |percona-server-client|8.2.0-1-1.jammy
-un |percona-server-client-5.7|
-ii |percona-server-mongodb|7.0.5-3.jammy
-ii |percona-server-mongodb-mongos|7.0.5-3.jammy
-un |percona-server-mongodb-mongos-pro|
-un |percona-server-mongodb-pro|
-ii |percona-server-mongodb-server|7.0.5-3.jammy
-un |percona-server-mongodb-server-pro|
-ii |percona-server-server|8.2.0-1-1.jammy
-iHR |percona-toolkit|3.5.7-1.jammy
-un |percona-xtrabackup|
-ii |percona-xtrabackup-81|8.1.0-1-1.jammy
-un |percona-xtradb-client-5.0|
-un |percona-xtradb-server-5.0|
-`),
-			dpkgErr: nil,
-			expectedPkgList: []*Package{
-				{
-					Name:    "percona-backup-mongodb",
-					Version: "2.3.1-1",
-				},
-				{
-					Name:    "percona-mongodb-mongosh",
-					Version: "2.1.1",
-				},
-				{
-					Name:    "percona-mysql-router",
-					Version: "8.2.0-1-1",
-				},
-				{
-					Name:    "percona-mysql-shell",
-					Version: "8.2.0-1-1",
-				},
-				{
-					Name:    "percona-pg-stat-monitor16",
-					Version: "2.0.4-2",
-				},
-				{
-					Name:    "percona-pgbouncer",
-					Version: "1.22.0-1",
-				},
-				{
-					Name:    "percona-postgresql-16",
-					Version: "16.2-1",
-				},
-				{
-					Name:    "percona-postgresql-16-pgaudit",
-					Version: "16.0-1",
-				},
-				{
-					Name:    "percona-postgresql-16-wal2json",
-					Version: "2.5-7",
-				},
-				{
-					Name:    "percona-release",
-					Version: "1.0-27",
-				},
-				{
-					Name:    "percona-server-client",
-					Version: "8.2.0-1-1",
-				},
-				{
-					Name:    "percona-server-mongodb",
-					Version: "7.0.5-3",
-				},
-				{
-					Name:    "percona-server-mongodb-mongos",
-					Version: "7.0.5-3",
-				},
-				{
-					Name:    "percona-server-mongodb-server",
-					Version: "7.0.5-3",
-				},
-				{
-					Name:    "percona-server-server",
-					Version: "8.2.0-1-1",
-				},
-				{
-					Name:    "percona-toolkit",
-					Version: "3.5.7-1",
-				},
-				{
-					Name:    "percona-xtrabackup-81",
-					Version: "8.1.0-1-1",
-				},
-			},
-			expectErr: nil,
+			name:     "empty_pattern",
+			pattern:  "",
+			expected: false,
 		},
 		{
-			name:               "pattern_percona_proxysql_installed_full_output",
-			packageNamePattern: "proxysql*",
-			dpkgOutput: []byte(`ii |proxysql|1:1.5.5-1.2.jammy
-iHR |proxysql2|2:2.5.5-1.2.jammy
-`),
-			dpkgErr: nil,
-			expectedPkgList: []*Package{
-				{
-					Name:    "proxysql",
-					Version: "1.5.5-1-2",
-				},
-				{
-					Name:    "proxysql2",
-					Version: "2.5.5-1-2",
-				},
-			},
-			expectErr: nil,
+			name:     "common_percona_package_percona",
+			pattern:  "percona-*",
+			expected: true,
 		},
 		{
-			name:               "pattern_percona_pmm_installed_full_output",
-			packageNamePattern: "pmm*",
-			dpkgOutput: []byte(`un |pmm-client|
-ii |pmm2-client|2.41.2-6.1.jammy
-`),
-			dpkgErr: nil,
-			expectedPkgList: []*Package{
-				{
-					Name:    "pmm2-client",
-					Version: "2.41.2-6-1",
-				},
-			},
-			expectErr: nil,
+			name:     "common_percona_package_proxysql",
+			pattern:  "proxysql*",
+			expected: true,
 		},
 		{
-			name:               "exact_external_installed_full_version_with_dfsg",
-			packageNamePattern: "etcd",
-			dpkgOutput:         []byte(`ii |etcd|3.3.25+dfsg-7ubuntu0.22.04.1`),
-			dpkgErr:            nil,
-			expectedPkgList: []*Package{
-				{
-					Name:    "etcd",
-					Version: "3.3.25",
-				},
-			},
-			expectErr: nil,
+			name:     "common_percona_package_pmm",
+			pattern:  "pmm*",
+			expected: true,
 		},
 		{
-			name:               "exact_external_installed_full_version_with_epoch_with_dfsg",
-			packageNamePattern: "etcd",
-			dpkgOutput:         []byte(`ii |etcd|1:3.3.25+dfsg-7ubuntu0.22.04.1`),
-			dpkgErr:            nil,
-			expectedPkgList: []*Package{
-				{
-					Name:    "etcd",
-					Version: "3.3.25",
-				},
-			},
-			expectErr: nil,
+			name:     "common_external_package_etcd",
+			pattern:  "etcd",
+			expected: false,
 		},
 		{
-			name:               "exact_external_installed_full_version_with_arch_with_epoch_with_dfsg",
-			packageNamePattern: "etcd",
-			dpkgOutput:         []byte(`ii |etcd:amd64|1:3.3.25+dfsg-7ubuntu0.22.04.1`),
-			dpkgErr:            nil,
-			expectedPkgList: []*Package{
-				{
-					Name:    "etcd",
-					Version: "3.3.25",
-				},
-			},
-			expectErr: nil,
+			name:     "common_external_package_haproxy",
+			pattern:  "haproxy",
+			expected: false,
 		},
 		{
-			name:               "percona_not_installed",
-			packageNamePattern: "percona-*",
-			dpkgOutput:         []byte(`un |percona-xtrabackup-81|`),
-			dpkgErr:            errors.New("no packages found matching percona-*"),
-			expectedPkgList:    nil,
-			expectErr:          errPackageNotFound,
+			name:     "common_external_package_patroni",
+			pattern:  "patroni",
+			expected: false,
 		},
 		{
-			name:               "percona_not_found",
-			packageNamePattern: "percona2-*",
-			dpkgOutput:         []byte(`no packages found matching percona2-*`),
-			dpkgErr:            errors.New("no packages found matching percona2-*"),
-			expectedPkgList:    nil,
-			expectErr:          errPackageNotFound,
+			name:     "common_external_package_pg",
+			pattern:  "pg*",
+			expected: false,
 		},
 		{
-			name:               "dpkg_error",
-			packageNamePattern: "percona-*",
-			dpkgOutput:         []byte(``),
-			dpkgErr:            errors.New("dpkg-query: error while loading shared libraries: libapt-pkg.so.6.0: cannot open shared object file: No such file or directory"),
-			expectedPkgList:    nil,
-			expectErr:          errors.New("dpkg-query: error while loading shared libraries: libapt-pkg.so.6.0: cannot open shared object file: No such file or directory"),
+			name:     "common_external_package_postgis",
+			pattern:  "postgis",
+			expected: false,
 		},
 		{
-			name:               "invalid_dpkg_output",
-			packageNamePattern: "percona-xtrabackup-81",
-			dpkgOutput:         []byte(`ii |percona-xtrabackup-81`),
-			dpkgErr:            nil,
-			expectedPkgList:    nil,
-			expectErr:          errPackageNotFound,
+			name:     "common_external_package_wal2json",
+			pattern:  "wal2json",
+			expected: false,
+		},
+		{
+			name:     "debian_percona_package_percona",
+			pattern:  "Percona-*",
+			expected: true,
 		},
 	}
 
@@ -344,324 +165,105 @@ ii |pmm2-client|2.41.2-6.1.jammy
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			pkg, err := parseDebianOutput(tt.packageNamePattern, tt.dpkgOutput, tt.dpkgErr)
-			if tt.expectErr != nil {
-				require.ErrorAs(t, err, &tt.expectErr)
-			}
-
-			if tt.expectedPkgList != nil {
-				require.Equal(t, tt.expectedPkgList, pkg)
-			}
+			result := isPerconaPackage(tt.pattern)
+			require.Equal(t, tt.expected, result)
 		})
 	}
 }
 
-func TestParseRpmOutput(t *testing.T) {
+func TestDebianRhelEqualOutput(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name               string
-		packageNamePattern string
-		rpmOutput          []byte
-		rpmErr             error
-		expectedPkgList    []*Package
-		expectErr          error
+		name                        string
+		isPerconaPackage            bool
+		debianPackageOutput         []byte
+		debianPackageErr            error
+		debianPackageExpectedErr    error
+		debianRepositoryOutput      [][]byte
+		debianRepositoryErr         error
+		debianRepositoryExpectedErr error
+		rhelPackageOutput           []byte
+		rhelPackageErr              error
+		rhelExpectedErr             error
+		expectedPackageList         []*Package
 	}{
 		{
-			name:               "pattern_percona_full_output",
-			packageNamePattern: "percona-*",
-			rpmOutput: []byte(`percona-server-server|8.0.36|28.1.el9
-percona-mysql-shell|8.0.36|1.el9
-percona-mongodb-mongosh|2.1.1|1.el9
-percona-server-mongodb-server|7.0.5|3.el9
-percona-postgresql16|16.2|2.el9
-percona-postgresql16-server|16.2|2.el9
-percona-pg_stat_monitor16|2.0.4|2.el9
-percona-pgaudit16|16.0|2.el9
-percona-wal2json16|2.5|2.el9
-percona-pgbouncer|1.22.0|1.el9
-percona-server-mongodb|7.0.5|3.el9
-percona-xtrabackup-81|8.1.0|1.1.el9
-percona-toolkit|3.5.7|1.el9
-percona-backup-mongodb|2.4.1.el9|
-`),
-			rpmErr: nil,
-			expectedPkgList: []*Package{
-				{
-					Name:    "percona-server-server",
-					Version: "8.0.36-28-1",
-				},
-				{
-					Name:    "percona-mysql-shell",
-					Version: "8.0.36-1",
-				},
-				{
-					Name:    "percona-mongodb-mongosh",
-					Version: "2.1.1-1",
-				},
-				{
-					Name:    "percona-server-mongodb-server",
-					Version: "7.0.5-3",
-				},
-				{
-					Name:    "percona-postgresql16",
-					Version: "16.2-2",
-				},
-				{
-					Name:    "percona-postgresql16-server",
-					Version: "16.2-2",
-				},
-				{
-					Name:    "percona-pg_stat_monitor16",
-					Version: "2.0.4-2",
-				},
-				{
-					Name:    "percona-pgaudit16",
-					Version: "16.0-2",
-				},
-				{
-					Name:    "percona-wal2json16",
-					Version: "2.5-2",
-				},
-				{
-					Name:    "percona-pgbouncer",
-					Version: "1.22.0-1",
-				},
-				{
-					Name:    "percona-server-mongodb",
-					Version: "7.0.5-3",
-				},
-				{
-					Name:    "percona-xtrabackup-81",
-					Version: "8.1.0-1-1",
-				},
-				{
-					Name:    "percona-toolkit",
-					Version: "3.5.7-1",
-				},
-				{
-					Name:    "percona-backup-mongodb",
-					Version: "2.4.1",
-				},
-			},
-			expectErr: nil,
-		},
-		{
-			name:               "pattern_percona_proxysql_installed",
-			packageNamePattern: "proxysql*",
-			rpmOutput: []byte(`proxysql|1.5.5|1.2.el9
-proxysql2|2.5.5|1.2.el9`),
-			rpmErr: nil,
-			expectedPkgList: []*Package{
-				{
-					Name:    "proxysql",
-					Version: "1.5.5-1-2",
-				},
-				{
-					Name:    "proxysql2",
-					Version: "2.5.5-1-2",
-				},
-			},
-			expectErr: nil,
-		},
-		{
-			name:               "pattern_percona_pmm_installed",
-			packageNamePattern: "pmm*",
-			rpmOutput:          []byte(`pmm2-client|2.41.2|6.1.el9`),
-			rpmErr:             nil,
-			expectedPkgList: []*Package{
-				{
-					Name:    "pmm2-client",
-					Version: "2.41.2-6-1",
-				},
-			},
-			expectErr: nil,
-		},
-		{
-			name:               "exact_external_installed",
-			packageNamePattern: "etcd",
-			rpmOutput:          []byte(`etcd|3.5.12|1.el8`),
-			rpmErr:             nil,
-			expectedPkgList: []*Package{
-				{
-					Name:    "etcd",
-					Version: "3.5.12",
-				},
-			},
-			expectErr: nil,
-		},
-		{
-			name:               "percona_not_installed",
-			packageNamePattern: "percona-*",
-			rpmOutput:          []byte(``),
-			rpmErr:             nil,
-			expectedPkgList:    nil,
-			expectErr:          errPackageNotFound,
-		},
-		{
-			name:               "external_not_installed",
-			packageNamePattern: "etcd*",
-			rpmOutput:          []byte(``),
-			rpmErr:             nil,
-			expectedPkgList:    nil,
-			expectErr:          errPackageNotFound,
-		},
-		{
-			name:               "rpm_error",
-			packageNamePattern: "percona-*",
-			rpmOutput:          []byte(``),
-			rpmErr:             errors.New("rpm: --test may only be specified during package installation and erasure"),
-			expectedPkgList:    nil,
-			expectErr:          errors.New("rpm: --test may only be specified during package installation and erasure"),
-		},
-		{
-			name:               "invalid_rpm_output",
-			packageNamePattern: "percona-xtrabackup-81",
-			rpmOutput:          []byte(`percona-xtrabackup-81|`),
-			rpmErr:             nil,
-			expectedPkgList:    nil,
-			expectErr:          errPackageNotFound,
-		},
-	}
-
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
-			pkg, err := parseRhelOutput(tt.packageNamePattern, tt.rpmOutput, tt.rpmErr)
-			if tt.expectErr != nil {
-				require.ErrorAs(t, err, &tt.expectErr)
-			}
-
-			if tt.expectedPkgList != nil {
-				require.Equal(t, tt.expectedPkgList, pkg)
-			}
-		})
-	}
-}
-
-func TestDpkgRpmEqualOutput(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name                string
-		packageNamePattern  string
-		dpkgOutput          []byte
-		dpkgErr             error
-		expectedDpkgErr     error
-		expectedDpkgPkgList []*Package
-		//
-		rpmOutput          []byte
-		rpmErr             error
-		expectedRpmErr     error
-		expectedRpmPkgList []*Package
-	}{
-		{
-			name:               "pattern_percona_full_output",
-			packageNamePattern: "percona-*",
-			dpkgOutput: []byte(`ii |percona-server-server|8.0.36-28-1.jammy
-ii |percona-mysql-shell:amd64|8.0.36-1.jammy
-ii |percona-mongodb-mongosh|2.1.1-1.jammy
+			name:             "pattern_percona_full_output",
+			isPerconaPackage: isPerconaPackage("percona-*"),
+			debianPackageOutput: []byte(`ii |percona-server-server|8.0.36-28-1.jammy
 ii |percona-server-mongodb-server|7.0.5-3.jammy
-ii |percona-server-mongodb|7.0.5-3.jammy
 ii |percona-backup-mongodb|2.4.1-1.jammy
-ii |percona-xtrabackup-81|8.1.0-1-1.jammy
-iHR |percona-toolkit|3.5.7-1.jammy
 `),
-			rpmOutput: []byte(`percona-server-server|8.0.36|28.1.el9
-percona-mysql-shell|8.0.36|1.el9
-percona-mongodb-mongosh|2.1.1|1.el9
-percona-server-mongodb-server|7.0.5|3.el9
-percona-server-mongodb|7.0.5|3.el9
-percona-backup-mongodb|2.4.1|1.el9
-percona-xtrabackup-81|8.1.0|1.1.el9
-percona-toolkit|3.5.7|1.el9
+			debianPackageErr:         nil,
+			debianPackageExpectedErr: nil,
+			debianRepositoryOutput: [][]byte{
+				[]byte(`percona-server-server:
+Installed: 8.0.36-28-1.jammy
+Candidate: 8.0.36-28-1.jammy
+Version table:
+*** 8.0.36-28-1.jammy 500
+        500 http://repo.percona.com/ps-80/apt jammy/main amd64 Packages
+        100 /var/lib/dpkg/status
+    8.0.35-27-1.jammy 500
+        500 http://repo.percona.com/ps-80/apt jammy/main amd64 Packages
+    8.0.34-26-1.jammy 500
+        500 http://repo.percona.com/ps-80/apt jammy/main amd64 Packages
 `),
-			expectedDpkgPkgList: []*Package{
+				[]byte(`percona-server-mongodb-server:
+Installed: 7.0.5-3.jammy
+Candidate: 7.0.5-3.jammy
+Version table:
+*** 7.0.5-3.jammy 500
+		500 http://repo.percona.com/pdmdb-7.0/apt jammy/main amd64 Packages
+		100 /var/lib/dpkg/status
+	7.0.4-2.jammy 500
+		500 http://repo.percona.com/pdmdb-7.0/apt jammy/main amd64 Packages
+`),
+				[]byte(`percona-backup-mongodb:
+Installed: 2.4.1-1.jammy
+Candidate: 2.4.1-1.jammy
+Version table:
+*** 2.4.1-1.jammy 500
+		500 http://repo.percona.com/pbm/apt jammy/main amd64 Packages
+		500 http://repo.percona.com/tools/apt jammy/main amd64 Packages
+		100 /var/lib/dpkg/status
+	2.4.0-1.jammy 500
+		500 http://repo.percona.com/pbm/apt jammy/main amd64 Packages
+		500 http://repo.percona.com/tools/apt jammy/main amd64 Packages
+`),
+			},
+			debianRepositoryErr:         nil,
+			debianRepositoryExpectedErr: nil,
+			rhelPackageOutput: []byte(`percona-server-server|8.0.36|28.1.el9|ps-80-release-x86_64
+percona-server-mongodb-server|7.0.5|3.el9|pdmdb-7.0-release-x86_64
+percona-backup-mongodb|2.4.1|1.el9|pbm-release-x86_64
+`),
+			rhelPackageErr: nil,
+			expectedPackageList: []*Package{
 				{
 					Name:    "percona-server-server",
 					Version: "8.0.36-28-1",
-				},
-				{
-					Name:    "percona-mysql-shell",
-					Version: "8.0.36-1",
-				},
-				{
-					Name:    "percona-mongodb-mongosh",
-					Version: "2.1.1-1",
+					Repository: PackageRepository{
+						Name:      "ps-80",
+						Component: "release",
+					},
 				},
 				{
 					Name:    "percona-server-mongodb-server",
 					Version: "7.0.5-3",
-				},
-				{
-					Name:    "percona-server-mongodb",
-					Version: "7.0.5-3",
-				},
-				{
-					Name:    "percona-backup-mongodb",
-					Version: "2.4.1-1",
-				},
-				{
-					Name:    "percona-xtrabackup-81",
-					Version: "8.1.0-1-1",
-				},
-				{
-					Name:    "percona-toolkit",
-					Version: "3.5.7-1",
-				},
-			},
-			expectedRpmPkgList: []*Package{
-				{
-					Name:    "percona-server-server",
-					Version: "8.0.36-28-1",
-				},
-				{
-					Name:    "percona-mysql-shell",
-					Version: "8.0.36-1",
-				},
-				{
-					Name:    "percona-mongodb-mongosh",
-					Version: "2.1.1-1",
-				},
-				{
-					Name:    "percona-server-mongodb-server",
-					Version: "7.0.5-3",
-				},
-				{
-					Name:    "percona-server-mongodb",
-					Version: "7.0.5-3",
+					Repository: PackageRepository{
+						Name:      "pdmdb-7.0",
+						Component: "release",
+					},
 				},
 				{
 					Name:    "percona-backup-mongodb",
 					Version: "2.4.1-1",
-				},
-				{
-					Name:    "percona-xtrabackup-81",
-					Version: "8.1.0-1-1",
-				},
-				{
-					Name:    "percona-toolkit",
-					Version: "3.5.7-1",
-				},
-			},
-		},
-		{
-			name:               "pattern_external_full_output",
-			packageNamePattern: "etcd*",
-			dpkgOutput:         []byte(`ii |etcd:amd64|1:3.3.25+dfsg-7ubuntu0.22.04.1`),
-			rpmOutput:          []byte(`etcd|3.3.25|1.el8`),
-			expectedDpkgPkgList: []*Package{
-				{
-					Name:    "etcd",
-					Version: "3.3.25",
-				},
-			},
-			expectedRpmPkgList: []*Package{
-				{
-					Name:    "etcd",
-					Version: "3.3.25",
+					Repository: PackageRepository{
+						Name:      "pbm",
+						Component: "release",
+					},
 				},
 			},
 		},
@@ -673,32 +275,41 @@ percona-toolkit|3.5.7|1.el9
 			t.Parallel()
 
 			// dpkg
-			dpkgPkgList, err := parseDebianOutput(tt.packageNamePattern, tt.dpkgOutput, tt.dpkgErr)
-			if tt.expectedDpkgErr == nil {
+			debianPkgList, err := parseDebianPackageOutput(tt.debianPackageOutput, tt.debianPackageErr, tt.isPerconaPackage)
+			if tt.debianPackageExpectedErr == nil {
 				require.NoError(t, err)
+				require.NotNil(t, debianPkgList)
 			} else {
-				require.ErrorAs(t, err, &tt.expectedDpkgErr)
+				require.ErrorAs(t, err, &tt.debianPackageExpectedErr)
+				require.Nil(t, debianPkgList)
 			}
 
-			if tt.expectedDpkgPkgList != nil {
-				require.Equal(t, tt.expectedDpkgPkgList, dpkgPkgList)
+			for i, pkg := range debianPkgList {
+				debianPkgRepository, repoErr := parseDebianRepositoryOutput(tt.debianRepositoryOutput[i], tt.debianRepositoryErr, tt.isPerconaPackage)
+				if tt.debianRepositoryExpectedErr == nil {
+					require.NoError(t, repoErr)
+					require.NotNil(t, debianPkgRepository)
+
+					pkg.Repository = *debianPkgRepository
+				} else {
+					require.ErrorAs(t, repoErr, &tt.debianRepositoryExpectedErr)
+					require.Nil(t, debianPkgRepository)
+				}
 			}
+
+			require.Equal(t, tt.expectedPackageList, debianPkgList)
 
 			// rpm
-			rpmPkgList, err := parseRhelOutput(tt.packageNamePattern, tt.rpmOutput, tt.expectedRpmErr)
-			if tt.expectedRpmErr == nil {
+			rhelPkgList, err := parseRhelPackageOutput(tt.rhelPackageOutput, tt.rhelExpectedErr, tt.isPerconaPackage)
+			if tt.rhelExpectedErr == nil {
 				require.NoError(t, err)
+				require.NotNil(t, rhelPkgList)
 			} else {
-				require.ErrorAs(t, err, &tt.expectedRpmErr)
+				require.ErrorAs(t, err, &tt.rhelExpectedErr)
+				require.Nil(t, rhelPkgList)
 			}
 
-			if tt.expectedDpkgPkgList != nil {
-				require.Equal(t, tt.expectedDpkgPkgList, rpmPkgList)
-			}
-
-			if tt.expectedDpkgPkgList != nil && tt.expectedRpmPkgList != nil {
-				require.Equal(t, dpkgPkgList, rpmPkgList)
-			}
+			require.Equal(t, tt.expectedPackageList, rhelPkgList)
 		})
 	}
 }
