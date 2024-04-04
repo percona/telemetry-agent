@@ -226,12 +226,12 @@ func main() {
 
 	// check that <telemetry root>/history dir exists on filesystem
 	if err := createTelemetryDirs(conf.Telemetry.HistoryPath); err != nil {
-		l.DPanic(err)
+		l.Panic(err)
 	}
 
 	pltClient, err := createPerconaPlatformClient(conf)
 	if err != nil {
-		l.DPanic(err)
+		l.Panic(err)
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
