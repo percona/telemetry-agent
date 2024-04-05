@@ -18,13 +18,17 @@ package metrics
 import (
 	"context"
 	"errors"
+	"strings"
 	"time"
 
 	"go.uber.org/zap"
 )
 
 const (
-	pkgResultTimeout = 30 * time.Second
+	pkgResultTimeout    = 30 * time.Second
+	distroFamilyUnknown = iota
+	distroFamilyRhel
+	distroFamilyDebian
 )
 
 var (
@@ -61,11 +65,12 @@ func ScrapeInstalledPackages(ctx context.Context) []*Package {
 	toReturn := make([]*Package, 0, 1)
 	var pkgFunc queryPkgFunc
 
-	switch {
-	case isDebianFamily(localOs):
+	distroFamily := getDistroFamily(localOs)
+	switch distroFamily {
+	case distroFamilyDebian:
 		pkgFunc = queryDebianPackage
 		pkgList = append(pkgList, getDebianPerconaPackages()...)
-	case isRHELFamily(localOs):
+	case distroFamilyRhel:
 		pkgFunc = queryRhelPackage
 	default:
 		zap.L().Sugar().Warnw("unsupported package system", zap.String("OS", localOs))
@@ -82,7 +87,7 @@ func ScrapeInstalledPackages(ctx context.Context) []*Package {
 			continue
 		}
 		// packages are installed
-		if isDebianFamily(localOs) {
+		if distroFamily == distroFamilyDebian {
 			// need extra processing - get package repository info.
 			for _, pkg := range pkgL {
 				pkgRepository, repoErr := queryDebianRepository(ctx, pkg.Name, isPerconaPackage(pkgNamePattern))
@@ -97,6 +102,25 @@ func ScrapeInstalledPackages(ctx context.Context) []*Package {
 		toReturn = append(toReturn, pkgL...)
 	}
 	return toReturn
+}
+
+func getDistroFamily(name string) int {
+	rhelPrefixes := []string{"el", "centos", "oracle", "rocky", "red hat", "amazon", "alma"}
+	debianPrefixes := []string{"debian", "ubuntu"}
+
+	nameL := strings.ToLower(name)
+	for _, prefix := range rhelPrefixes {
+		if strings.HasPrefix(nameL, prefix) {
+			return distroFamilyRhel
+		}
+	}
+
+	for _, prefix := range debianPrefixes {
+		if strings.HasPrefix(nameL, prefix) {
+			return distroFamilyDebian
+		}
+	}
+	return distroFamilyUnknown
 }
 
 func isPerconaPackage(packageNamePattern string) bool {

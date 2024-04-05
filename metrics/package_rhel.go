@@ -12,18 +12,6 @@ import (
 	"go.uber.org/zap"
 )
 
-func isRHELFamily(name string) bool {
-	nameL := strings.ToLower(name)
-	prefixes := []string{"el", "centos", "oracle", "rocky", "red hat", "amazon", "alma"}
-
-	for _, prefix := range prefixes {
-		if strings.HasPrefix(nameL, prefix) {
-			return true
-		}
-	}
-	return false
-}
-
 func queryRhelPackage(ctx context.Context, packageNamePattern string) ([]*Package, error) {
 	args, err := getRhelPackageManager()
 	if err != nil {
@@ -136,7 +124,7 @@ func parseRhelPackageRegistry(packageRepository string, isPerconaPackage bool) P
 	// packageRepository = 'pt-release-x86_64', 'noarch', ''
 	// Note: repository value may be empty!
 
-	toReturn := PackageRepository{}
+	var toReturn PackageRepository
 	if len(packageRepository) == 0 {
 		return toReturn
 	}

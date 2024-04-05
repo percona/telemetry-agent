@@ -14,7 +14,7 @@ func TestIsRHELFamily(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			require.Equal(t, tt.expectedRhel, isRHELFamily(tt.osName))
+			require.Equal(t, tt.expected, getDistroFamily(tt.osName))
 		})
 	}
 }

@@ -14,7 +14,7 @@ func TestIsDebianFamily(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			require.Equal(t, tt.expectedDebian, isDebianFamily(tt.osName))
+			require.Equal(t, tt.expected, getDistroFamily(tt.osName))
 		})
 	}
 }

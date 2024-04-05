@@ -22,76 +22,69 @@ import (
 )
 
 var osNames = []struct { //nolint:gochecknoglobals
-	name           string
-	osName         string
-	expectedDebian bool
-	expectedRhel   bool
+	name     string
+	osName   string
+	expected int
 }{
 	{
-		name:           "Enterprise Linux 8",
-		osName:         "el8",
-		expectedDebian: false,
-		expectedRhel:   true,
+		name:     "Enterprise Linux 8",
+		osName:   "el8",
+		expected: distroFamilyRhel,
 	},
 	{
-		name:           "Enterprise Linux 9",
-		osName:         "el9",
-		expectedDebian: false,
-		expectedRhel:   true,
+		name:     "Enterprise Linux 9",
+		osName:   "el9",
+		expected: distroFamilyRhel,
 	},
 	{
-		name:           "Ubuntu 22.04.3 LTS",
-		osName:         "Ubuntu 22.04.3 LTS",
-		expectedDebian: true,
-		expectedRhel:   false,
+		name:     "Ubuntu 22.04.3 LTS",
+		osName:   "Ubuntu 22.04.3 LTS",
+		expected: distroFamilyDebian,
 	},
 	{
-		name:           "CentOS Linux 7 (Core)",
-		osName:         "CentOS Linux 7 (Core)",
-		expectedDebian: false,
-		expectedRhel:   true,
+		name:     "CentOS Linux 7 (Core)",
+		osName:   "CentOS Linux 7 (Core)",
+		expected: distroFamilyRhel,
 	},
 	{
-		name:           "Debian GNU/Linux 10 (buster)",
-		osName:         "Debian GNU/Linux 10 (buster)",
-		expectedDebian: true,
-		expectedRhel:   false,
+		name:     "Debian GNU/Linux 10 (buster)",
+		osName:   "Debian GNU/Linux 10 (buster)",
+		expected: distroFamilyDebian,
 	},
 	{
-		name:           "Oracle Linux Server 8.9",
-		osName:         "Oracle Linux Server 8.9",
-		expectedDebian: false,
-		expectedRhel:   true,
+		name:     "Oracle Linux Server 8.9",
+		osName:   "Oracle Linux Server 8.9",
+		expected: distroFamilyRhel,
 	},
 	{
-		name:           "Amazon Linux 2",
-		osName:         "Amazon Linux 2",
-		expectedDebian: false,
-		expectedRhel:   true,
+		name:     "Amazon Linux 2",
+		osName:   "Amazon Linux 2",
+		expected: distroFamilyRhel,
 	},
 	{
-		name:           "CentOS Stream 8",
-		osName:         "CentOS Stream 8",
-		expectedDebian: false,
-		expectedRhel:   true,
+		name:     "CentOS Stream 8",
+		osName:   "CentOS Stream 8",
+		expected: distroFamilyRhel,
 	},
 	{
-		name:           "Rocky Linux 8.9 (Green Obsidian)",
-		osName:         "Rocky Linux 8.9 (Green Obsidian)",
-		expectedDebian: false,
-		expectedRhel:   true,
+		name:     "Rocky Linux 8.9 (Green Obsidian)",
+		osName:   "Rocky Linux 8.9 (Green Obsidian)",
+		expected: distroFamilyRhel,
 	},
 	{
-		name:           "Red Hat Enterprise Linux 8.9 (Ootpa)",
-		osName:         "Red Hat Enterprise Linux 8.9 (Ootpa)",
-		expectedDebian: false,
-		expectedRhel:   true,
+		name:     "Red Hat Enterprise Linux 8.9 (Ootpa)",
+		osName:   "Red Hat Enterprise Linux 8.9 (Ootpa)",
+		expected: distroFamilyRhel,
 	},
 	{
-		name:           "AlmaLinux 8.9 (Midnight Oncilla)",
-		osName:         "AlmaLinux 8.9 (Midnight Oncilla)",
-		expectedDebian: false,
-		expectedRhel:   true,
+		name:     "AlmaLinux 8.9 (Midnight Oncilla)",
+		osName:   "AlmaLinux 8.9 (Midnight Oncilla)",
+		expected: distroFamilyRhel,
+	},
+	{
+		name:     "MacOS",
+		osName:   "Darwin",
+		expected: distroFamilyUnknown,
 	},
 }
 

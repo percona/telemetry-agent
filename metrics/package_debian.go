@@ -14,18 +14,6 @@ import (
 	"go.uber.org/zap"
 )
 
-func isDebianFamily(name string) bool {
-	nameL := strings.ToLower(name)
-	prefixes := []string{"debian", "ubuntu"}
-
-	for _, prefix := range prefixes {
-		if strings.HasPrefix(nameL, prefix) {
-			return true
-		}
-	}
-	return false
-}
-
 func queryDebianPackage(ctx context.Context, packageNamePattern string) ([]*Package, error) {
 	args := []string{"dpkg-query", "-f", "'${db:Status-Abbrev}|${binary:Package}|${source:Version}\n'", "-W", packageNamePattern}
 	zap.L().Sugar().Debugw("executing command", zap.String("cmd", strings.Join(args, " ")))
