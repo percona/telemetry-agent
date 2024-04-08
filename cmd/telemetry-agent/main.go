@@ -114,6 +114,12 @@ func processPillarsMetrics(c config.Config) []*metrics.File {
 func processMetrics(ctx context.Context, c config.Config, platformClient *platformClient.Client) { //nolint:cyclop
 	l := zap.L().Sugar()
 
+	pillarMetrics := processPillarsMetrics(c)
+	if len(pillarMetrics) == 0 {
+		l.Info("no Pillar metrics files found, skip scraping host metrics and sending telemetry")
+		return
+	}
+
 	l.Info("scraping host metrics")
 	hostMetrics := metrics.ScrapeHostMetrics()
 	hostInstanceID := hostMetrics.Metrics[metrics.InstanceIDKey]
@@ -130,7 +136,6 @@ func processMetrics(ctx context.Context, c config.Config, platformClient *platfo
 		}
 	}
 
-	pillarMetrics := processPillarsMetrics(c)
 	for _, pillarM := range pillarMetrics {
 		// prepare request to Percona Platform
 		reportMetrics := make([]*platformReporter.GenericReport_Metric, 0, 1)
