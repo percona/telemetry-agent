@@ -80,7 +80,7 @@ func TestGetInstanceID(t *testing.T) {
 			name: "file_presents_single_line",
 			setupTestData: func(t *testing.T, tmpDir, instanceFile, instanceID string) {
 				t.Helper()
-				err := os.WriteFile(filepath.Join(tmpDir, instanceFile), []byte(fmt.Sprintf("%s: %s", InstanceIDKey, instanceID)), 0o600)
+				err := os.WriteFile(filepath.Join(tmpDir, instanceFile), []byte(fmt.Sprintf("%s:%s", InstanceIDKey, instanceID)), 0o600)
 				require.NoError(t, err)
 			},
 			postCheckTestData: func(t *testing.T, tmpDir, instanceFile, wantInstanceID string) {
@@ -95,7 +95,7 @@ func TestGetInstanceID(t *testing.T) {
 			name: "file_presents_single_line_key_corrupted",
 			setupTestData: func(t *testing.T, tmpDir, instanceFile, instanceID string) {
 				t.Helper()
-				err := os.WriteFile(filepath.Join(tmpDir, instanceFile), []byte(fmt.Sprintf("%scorrupt: %s", InstanceIDKey, instanceID)), 0o600)
+				err := os.WriteFile(filepath.Join(tmpDir, instanceFile), []byte(fmt.Sprintf("%scorrupt:%s", InstanceIDKey, instanceID)), 0o600)
 				require.NoError(t, err)
 			},
 			postCheckTestData: func(t *testing.T, tmpDir, instanceFile, wantInstanceID string) {
@@ -110,7 +110,7 @@ func TestGetInstanceID(t *testing.T) {
 			name: "file_presents_single_line_value_corrupted",
 			setupTestData: func(t *testing.T, tmpDir, instanceFile, instanceID string) {
 				t.Helper()
-				err := os.WriteFile(filepath.Join(tmpDir, instanceFile), []byte(fmt.Sprintf("%s: %scorrupt", InstanceIDKey, instanceID)), 0o600)
+				err := os.WriteFile(filepath.Join(tmpDir, instanceFile), []byte(fmt.Sprintf("%s:%scorrupt", InstanceIDKey, instanceID)), 0o600)
 				require.NoError(t, err)
 			},
 			postCheckTestData: func(t *testing.T, tmpDir, instanceFile, wantInstanceID string) {
@@ -125,7 +125,7 @@ func TestGetInstanceID(t *testing.T) {
 			name: "file_presents_multi_lines",
 			setupTestData: func(t *testing.T, tmpDir, instanceFile, instanceID string) {
 				t.Helper()
-				data := fmt.Sprintf("PRODUCT_FAMILY_PS: 1\nPRODUCT_FAMILY_PXC: 1\nPRODUCT_FAMILY_PSMDB: 1\n%s: %s", InstanceIDKey, instanceID)
+				data := fmt.Sprintf("PRODUCT_FAMILY_PS: 1\nPRODUCT_FAMILY_PXC: 1\nPRODUCT_FAMILY_PSMDB: 1\n%s:%s", InstanceIDKey, instanceID)
 				err := os.WriteFile(filepath.Join(tmpDir, instanceFile), []byte(data), 0o600)
 				require.NoError(t, err)
 			},
@@ -141,7 +141,7 @@ func TestGetInstanceID(t *testing.T) {
 			name: "file_presents_multi_lines_key_corrupted",
 			setupTestData: func(t *testing.T, tmpDir, instanceFile, instanceID string) {
 				t.Helper()
-				data := fmt.Sprintf("PRODUCT_FAMILY_PS: 1\nPRODUCT_FAMILY_PXC: 1\nPRODUCT_FAMILY_PSMDB: 1\n%scorrupt: %s", InstanceIDKey, instanceID)
+				data := fmt.Sprintf("PRODUCT_FAMILY_PS: 1\nPRODUCT_FAMILY_PXC: 1\nPRODUCT_FAMILY_PSMDB: 1\n%scorrupt:%s", InstanceIDKey, instanceID)
 				err := os.WriteFile(filepath.Join(tmpDir, instanceFile), []byte(data), 0o600)
 				require.NoError(t, err)
 			},
@@ -157,7 +157,7 @@ func TestGetInstanceID(t *testing.T) {
 			name: "file_presents_multi_lines_value_corrupted",
 			setupTestData: func(t *testing.T, tmpDir, instanceFile, instanceID string) {
 				t.Helper()
-				data := fmt.Sprintf("PRODUCT_FAMILY_PS: 1\nPRODUCT_FAMILY_PXC: 1\nPRODUCT_FAMILY_PSMDB: 1\n%s: %scorrupt", InstanceIDKey, instanceID)
+				data := fmt.Sprintf("PRODUCT_FAMILY_PS: 1\nPRODUCT_FAMILY_PXC: 1\nPRODUCT_FAMILY_PSMDB: 1\n%s:%scorrupt", InstanceIDKey, instanceID)
 				err := os.WriteFile(filepath.Join(tmpDir, instanceFile), []byte(data), 0o600)
 				require.NoError(t, err)
 			},

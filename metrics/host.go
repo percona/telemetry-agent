@@ -164,7 +164,7 @@ func getRandomUUID() string {
 }
 
 func createTelemetryFile(instanceFile, instanceID string) {
-	if err := os.WriteFile(instanceFile, []byte(fmt.Sprintf("%s: %s", InstanceIDKey, instanceID)), 0o600); err != nil {
+	if err := os.WriteFile(instanceFile, []byte(fmt.Sprintf("%s:%s", InstanceIDKey, instanceID)), 0o600); err != nil {
 		zap.L().Sugar().With(zap.String("file", instanceFile)).
 			Errorw("failed to write Percona telemetry file", zap.Error(err))
 	}
