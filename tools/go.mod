@@ -8,7 +8,7 @@ require (
 	github.com/reviewdog/reviewdog v0.14.2
 	github.com/vektra/mockery/v2 v2.32.0
 	golang.org/x/tools v0.20.0
-	mvdan.cc/gofumpt v0.5.0
+	mvdan.cc/gofumpt v0.6.0
 )
 
 require (
@@ -83,7 +83,7 @@ require (
 	github.com/golangci/misspell v0.4.0 // indirect
 	github.com/golangci/revgrep v0.0.0-20220804021717-745bb2f7c2e6 // indirect
 	github.com/golangci/unconvert v0.0.0-20180507085042-28b1c447d1f4 // indirect
-	github.com/google/go-cmp v0.5.9 // indirect
+	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/google/go-github/v53 v53.1.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/s2a-go v0.1.3 // indirect
