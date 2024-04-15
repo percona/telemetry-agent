@@ -36,3 +36,6 @@ require (
 	google.golang.org/grpc v1.62.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+// indirect dependency replaced because of security vulnerability
+replace github.com/goauthentik/authentik => github.com/goauthentik/authentik v0.0.0-20240304192025-4ec37c52395d //indirect

@@ -222,4 +222,7 @@ require (
 	mvdan.cc/unparam v0.0.0-20230312165513-e84e2d14e3b8 // indirect
 )
 
+// indirect dependency replaced because of security vulnerability
 replace github.com/dgrijalva/jwt-go => github.com/golang-jwt/jwt v3.2.1+incompatible
+
+replace github.com/goauthentik/authentik => github.com/goauthentik/authentik v0.0.0-20240304192025-4ec37c52395d //indirect
