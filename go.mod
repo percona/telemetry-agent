@@ -38,4 +38,4 @@ require (
 )
 
 // indirect dependency replaced because of security vulnerability
-replace github.com/goauthentik/authentik => github.com/goauthentik/authentik v0.0.0-20240304192025-4ec37c52395d //indirect
+replace goauthentik.io => goauthentik.io v0.0.0-20240304192025-4ec37c52395d //indirect
