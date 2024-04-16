@@ -11,7 +11,6 @@ func TestIsDebianFamily(t *testing.T) {
 	t.Parallel()
 
 	for _, tt := range osNames {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			require.Equal(t, tt.expected, getDistroFamily(tt.osName))
@@ -22,6 +21,7 @@ func TestIsDebianFamily(t *testing.T) {
 func TestParseDebianPackageOutput(t *testing.T) {
 	t.Parallel()
 
+	dpkgErr := errors.New("dpkg-query: error while loading shared libraries: libapt-pkg.so.6.0: cannot open shared object file: No such file or directory")
 	tests := []struct {
 		name                string
 		isPerconaPackage    bool
@@ -231,7 +231,7 @@ ii |pmm2-client|2.41.2-6.1.jammy
 			name:                "percona_not_installed",
 			isPerconaPackage:    isPerconaPackage("percona-*"),
 			packageOutput:       []byte(`un |percona-xtrabackup-81|`),
-			packageErr:          errors.New("no packages found matching percona-*"),
+			packageErr:          errors.New("dpkg-query: no packages found matching percona-*"),
 			expectedPackageList: nil,
 			expectErr:           errPackageNotFound,
 		},
@@ -239,7 +239,7 @@ ii |pmm2-client|2.41.2-6.1.jammy
 			name:                "percona_not_found",
 			isPerconaPackage:    isPerconaPackage("percona-*"),
 			packageOutput:       []byte(`no packages found matching percona2-*`),
-			packageErr:          errors.New("no packages found matching percona2-*"),
+			packageErr:          errors.New("dpkg-query:  no packages found matching percona2-*"),
 			expectedPackageList: nil,
 			expectErr:           errPackageNotFound,
 		},
@@ -247,9 +247,9 @@ ii |pmm2-client|2.41.2-6.1.jammy
 			name:                "dpkg_error",
 			isPerconaPackage:    isPerconaPackage("percona-*"),
 			packageOutput:       []byte(``),
-			packageErr:          errors.New("dpkg-query: error while loading shared libraries: libapt-pkg.so.6.0: cannot open shared object file: No such file or directory"),
+			packageErr:          dpkgErr,
 			expectedPackageList: nil,
-			expectErr:           errors.New("dpkg-query: error while loading shared libraries: libapt-pkg.so.6.0: cannot open shared object file: No such file or directory"),
+			expectErr:           dpkgErr,
 		},
 		{
 			name:                "invalid_dpkg_output",
@@ -262,13 +262,12 @@ ii |pmm2-client|2.41.2-6.1.jammy
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
 			pkg, err := parseDebianPackageOutput(tt.packageOutput, tt.packageErr, tt.isPerconaPackage)
 			if tt.expectErr != nil {
-				require.ErrorAs(t, err, &tt.expectErr)
+				require.ErrorIs(t, err, tt.expectErr)
 			}
 
 			if tt.expectedPackageList != nil {
@@ -280,6 +279,7 @@ ii |pmm2-client|2.41.2-6.1.jammy
 
 func TestParseDebianRepositoryOutput(t *testing.T) {
 	t.Parallel()
+	repositoryErr := errors.New("command line option 'r' [from -res] is not understood in combination with the other options")
 
 	tests := []struct {
 		name               string
@@ -504,9 +504,9 @@ Version table:
 			name:               "repository_error",
 			isPerconaPackage:   isPerconaPackage("error"),
 			repositoryOutput:   []byte(``),
-			repositoryErr:      errors.New("command line option 'r' [from -res] is not understood in combination with the other options"),
+			repositoryErr:      repositoryErr,
 			expectedRepository: nil,
-			expectErr:          errors.New("command line option 'r' [from -res] is not understood in combination with the other options"),
+			expectErr:          repositoryErr,
 		},
 		{
 			name:             "unexpected_repository_output",
@@ -523,7 +523,7 @@ Version table:
 `),
 			repositoryErr:      nil,
 			expectedRepository: nil,
-			expectErr:          errors.New("unexpected package repository line"),
+			expectErr:          errUnexpectedRepoLine,
 		},
 		{
 			name:             "no_candidate_repository_output",
@@ -537,7 +537,7 @@ Version table:
 `),
 			repositoryErr:      nil,
 			expectedRepository: nil,
-			expectErr:          errors.New("unexpected package repository line"),
+			expectErr:          errPackageRepositoryNotFound,
 		},
 		{
 			name:             "invalid_repository_output",
@@ -554,18 +554,17 @@ Version table:
 `),
 			repositoryErr:      nil,
 			expectedRepository: nil,
-			expectErr:          errors.New("unexpected configured package repository line"),
+			expectErr:          errUnexpectedConfiguredRepoLine,
 		},
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
 			pkg, err := parseDebianRepositoryOutput(tt.repositoryOutput, tt.repositoryErr, tt.isPerconaPackage)
 			if tt.expectErr != nil {
-				require.ErrorAs(t, err, &tt.expectErr)
+				require.ErrorIs(t, err, tt.expectErr)
 			}
 
 			if tt.expectedRepository != nil {

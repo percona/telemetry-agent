@@ -37,7 +37,7 @@ func TestGetInstanceID(t *testing.T) {
 	}{
 		{
 			name: "non_existing_directory",
-			setupTestData: func(t *testing.T, tmpDir, instanceFile, instanceID string) {
+			setupTestData: func(t *testing.T, _, _, _ string) {
 				t.Helper()
 			},
 			postCheckTestData: func(t *testing.T, tmpDir, instanceFile, wantInstanceID string) {
@@ -50,7 +50,7 @@ func TestGetInstanceID(t *testing.T) {
 		},
 		{
 			name: "non_existing_file",
-			setupTestData: func(t *testing.T, tmpDir, instanceFile, instanceID string) {
+			setupTestData: func(t *testing.T, _, _, _ string) {
 				t.Helper()
 			},
 			postCheckTestData: func(t *testing.T, tmpDir, instanceFile, wantInstanceID string) {
@@ -63,7 +63,7 @@ func TestGetInstanceID(t *testing.T) {
 		},
 		{
 			name: "empty_file",
-			setupTestData: func(t *testing.T, tmpDir, instanceFile, instanceID string) {
+			setupTestData: func(t *testing.T, tmpDir, instanceFile, _ string) {
 				t.Helper()
 				// create empty file
 				_, err := os.Create(filepath.Clean(filepath.Join(tmpDir, instanceFile)))
@@ -173,7 +173,6 @@ func TestGetInstanceID(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -218,7 +217,7 @@ func TestReadOSReleaseFile(t *testing.T) {
 	}{
 		{
 			name: "file_absent",
-			setupTestData: func(t *testing.T, tmpDir, releaseFile string) {
+			setupTestData: func(t *testing.T, _, _ string) {
 				t.Helper()
 			},
 			postCheckTestData: func(t *testing.T, tmpDir, releaseFile string) {
@@ -264,7 +263,6 @@ ORACLE_SUPPORT_PRODUCT_VERSION=9.2
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -294,7 +292,7 @@ func TestReadSystemReleaseFile(t *testing.T) {
 	}{
 		{
 			name: "file_absent",
-			setupTestData: func(t *testing.T, tmpDir, releaseFile string) {
+			setupTestData: func(t *testing.T, _, _ string) {
 				t.Helper()
 			},
 			postCheckTestData: func(t *testing.T, tmpDir, releaseFile string) {
@@ -337,7 +335,6 @@ func TestReadSystemReleaseFile(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 

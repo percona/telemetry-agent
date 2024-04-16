@@ -22,23 +22,23 @@ func TestParseMetricsFile(t *testing.T) {
 	}{
 		{
 			name: "non_existing_directory",
-			setupTestData: func(t *testing.T, tmpDir, metricsFile string) {
+			setupTestData: func(t *testing.T, tmpDir, _ string) {
 				t.Helper()
 				// make directory absent
 				_ = os.RemoveAll(tmpDir)
 			},
-			postCheckTestData: func(t *testing.T, tmpDir, metricsFile string, parsedMetrics *File) {
+			postCheckTestData: func(t *testing.T, tmpDir, _ string, parsedMetrics *File) {
 				t.Helper()
 				// directory shall not be created
 				_, err := os.Stat(tmpDir)
-				require.Error(t, err, os.ErrNotExist)
+				require.ErrorIs(t, err, os.ErrNotExist)
 				require.Nil(t, parsedMetrics)
 			},
 			wantErr: true,
 		},
 		{
 			name: "empty_directory",
-			setupTestData: func(t *testing.T, tmpDir, metricsFile string) {
+			setupTestData: func(t *testing.T, _, _ string) {
 				t.Helper()
 			},
 			postCheckTestData: func(t *testing.T, tmpDir, metricsFile string, parsedMetrics *File) {
@@ -50,7 +50,7 @@ func TestParseMetricsFile(t *testing.T) {
 
 				// file shall not be created
 				_, err = os.Stat(filepath.Clean(filepath.Join(tmpDir, metricsFile)))
-				require.Error(t, err, os.ErrNotExist)
+				require.ErrorIs(t, err, os.ErrNotExist)
 				require.Nil(t, parsedMetrics)
 			},
 			wantErr: true,
@@ -158,7 +158,6 @@ func TestParseMetricsFile(t *testing.T) {
 	}
 
 	for _, tt := range testCases {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 

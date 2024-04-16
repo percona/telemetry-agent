@@ -1,6 +1,6 @@
 module github.com/percona/telemetry-agent
 
-go 1.21.7
+go 1.22.2
 
 require (
 	github.com/alecthomas/kong v0.9.0
@@ -38,4 +38,4 @@ require (
 )
 
 // indirect dependency replaced because of security vulnerability
-replace goauthentik.io => goauthentik.io v0.0.0-20230302191751-63cfbb721cd7 //indirect
+//replace goauthentik.io => goauthentik.io v0.0.0-20230302191751-63cfbb721cd7 //indirect

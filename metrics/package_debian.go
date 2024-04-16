@@ -14,6 +14,11 @@ import (
 	"go.uber.org/zap"
 )
 
+var (
+	errUnexpectedRepoLine           = errors.New("unexpected package repository line")
+	errUnexpectedConfiguredRepoLine = errors.New("unexpected configured package repository line")
+)
+
 func queryDebianPackage(ctx context.Context, packageNamePattern string) ([]*Package, error) {
 	args := []string{"dpkg-query", "-f", "'${db:Status-Abbrev}|${binary:Package}|${source:Version}\n'", "-W", packageNamePattern}
 	zap.L().Sugar().Debugw("executing command", zap.String("cmd", strings.Join(args, " ")))
@@ -28,7 +33,7 @@ func queryDebianPackage(ctx context.Context, packageNamePattern string) ([]*Pack
 
 func parseDebianPackageOutput(dpkgOutput []byte, dpkgErr error, isPerconaPackage bool) ([]*Package, error) { //nolint:cyclop
 	if dpkgErr != nil {
-		if strings.Contains(string(dpkgOutput), "no packages found matching") {
+		if strings.Contains(dpkgErr.Error(), "no packages found matching") {
 			// package is not installed
 			return nil, errPackageNotFound
 		}
@@ -201,7 +206,7 @@ func parseDebianRepositoryOutput(repoOutput []byte, repoErr error, isPerconaPack
 		if len(tokens) != 3 {
 			// smth strange
 			zap.L().Sugar().Warnw("unexpected configured package repository line", zap.String("line", line))
-			return nil, errors.New("unexpected configured package repository line")
+			return nil, errUnexpectedConfiguredRepoLine
 		}
 		priority := tokens[2]
 		for scanner.Scan() {
@@ -232,7 +237,7 @@ func parseDebianPackageRepositoryLine(repositoryLine string, isPerconaPackage bo
 	if len(repoTokens) < 3 {
 		// this is case with filesystem path or smth strange
 		zap.L().Sugar().Warnw("unexpected package repository line", zap.String("line", repositoryLine))
-		return nil, errors.New("unexpected package repository line")
+		return nil, errUnexpectedRepoLine
 	}
 
 	repoAddr := repoTokens[1]

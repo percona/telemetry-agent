@@ -154,7 +154,6 @@ func TestIsPerconaPackage(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -263,7 +262,6 @@ percona-backup-mongodb|2.4.1|1.el9|pbm-release-x86_64
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -273,7 +271,7 @@ percona-backup-mongodb|2.4.1|1.el9|pbm-release-x86_64
 				require.NoError(t, err)
 				require.NotNil(t, debianPkgList)
 			} else {
-				require.ErrorAs(t, err, &tt.debianPackageExpectedErr)
+				require.ErrorIs(t, err, tt.debianPackageExpectedErr)
 				require.Nil(t, debianPkgList)
 			}
 
@@ -285,7 +283,7 @@ percona-backup-mongodb|2.4.1|1.el9|pbm-release-x86_64
 
 					pkg.Repository = *debianPkgRepository
 				} else {
-					require.ErrorAs(t, repoErr, &tt.debianRepositoryExpectedErr)
+					require.ErrorIs(t, repoErr, tt.debianRepositoryExpectedErr)
 					require.Nil(t, debianPkgRepository)
 				}
 			}
@@ -298,7 +296,7 @@ percona-backup-mongodb|2.4.1|1.el9|pbm-release-x86_64
 				require.NoError(t, err)
 				require.NotNil(t, rhelPkgList)
 			} else {
-				require.ErrorAs(t, err, &tt.rhelExpectedErr)
+				require.ErrorIs(t, err, tt.rhelExpectedErr)
 				require.Nil(t, rhelPkgList)
 			}
 
