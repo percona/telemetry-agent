@@ -121,7 +121,7 @@ func processMetrics(ctx context.Context, c config.Config, platformClient *platfo
 	}
 
 	l.Info("scraping host metrics")
-	hostMetrics := metrics.ScrapeHostMetrics()
+	hostMetrics := metrics.ScrapeHostMetrics(ctx)
 	hostInstanceID := hostMetrics.Metrics[metrics.InstanceIDKey]
 	// instanceId is not needed in main metrics set
 	delete(hostMetrics.Metrics, metrics.InstanceIDKey)
