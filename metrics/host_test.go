@@ -16,6 +16,7 @@
 package metrics
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -225,7 +226,7 @@ func TestReadOSReleaseFile(t *testing.T) {
 				checkDirectoryContentCount(t, tmpDir, 0)
 				checkFilesAbsent(t, tmpDir, releaseFile)
 			},
-			want: unknownOS,
+			want: unknownString,
 		},
 		{
 			name: "file_exists",
@@ -301,7 +302,7 @@ func TestReadSystemReleaseFile(t *testing.T) {
 				checkDirectoryContentCount(t, tmpDir, 0)
 				checkFilesAbsent(t, tmpDir, releaseFile)
 			},
-			want: unknownOS,
+			want: unknownString,
 		},
 		{
 			name: "system_format",
@@ -392,6 +393,64 @@ func TestGetDeploymentInfo(t *testing.T) { //nolint:paralleltest
 			tt.setupTestData(t)
 			got := getDeploymentInfo()
 			require.Equal(t, tt.expected, got)
+		})
+	}
+}
+
+func TestParseHardwareInfoOutput(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		hwOutput []byte
+		hwErr    error
+		expected string
+	}{
+		{
+			name:     "error",
+			hwOutput: []byte(""),
+			hwErr:    errors.New("some error"),
+			expected: fmt.Sprintf("%s %s", unknownString, unknownString),
+		},
+		{
+			name:     "empty_output",
+			hwOutput: []byte(""),
+			hwErr:    nil,
+			expected: fmt.Sprintf("%s %s", unknownString, unknownString),
+		},
+		{
+			name:     "valid_output_debian",
+			hwOutput: []byte("x86_64 unknown"),
+			hwErr:    nil,
+			expected: "x86_64 unknown",
+		},
+		{
+			name:     "valid_output_rhel",
+			hwOutput: []byte("x86_64 x86_64"), //nolint:dupword
+			hwErr:    nil,
+			expected: "x86_64 x86_64", //nolint:dupword
+		},
+		{
+			name:     "valid_output_debian_extra_spaces",
+			hwOutput: []byte("  x86_64 unknown  "),
+			hwErr:    nil,
+			expected: "x86_64 unknown",
+		},
+		{
+			name:     "valid_output_rhel_extra_spaces",
+			hwOutput: []byte("  x86_64 x86_64  "),
+			hwErr:    nil,
+			expected: "x86_64 x86_64", //nolint:dupword
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			result := parseHardwareInfoOutput(tt.hwOutput, tt.hwErr)
+			require.Equal(t, tt.expected, result)
 		})
 	}
 }

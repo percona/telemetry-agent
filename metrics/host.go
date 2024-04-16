@@ -17,14 +17,16 @@ package metrics
 
 import (
 	"bufio"
+	"bytes"
+	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/matishsiao/goInfo"
 	"go.uber.org/zap"
 )
 
@@ -32,7 +34,7 @@ const (
 
 	// InstanceIDKey key name in telemetryFile with host instance ID.
 	InstanceIDKey     = "instanceId"
-	unknownOS         = "unknown"
+	unknownString     = "unknown"
 	telemetryFile     = "/usr/local/percona/telemetry_uuid"
 	deploymentPackage = "PACKAGE"
 	deploymentDocker  = "DOCKER"
@@ -46,7 +48,7 @@ const (
 
 // ScrapeHostMetrics gathers metrics about host where Telemetry Agent is running.
 // In addition, it checks Percona telemetry file and extracts instanceId value from it.
-func ScrapeHostMetrics() *File {
+func ScrapeHostMetrics(ctx context.Context) *File {
 	f := &File{
 		Timestamp: time.Now(),
 		Filename:  telemetryFile,
@@ -55,7 +57,7 @@ func ScrapeHostMetrics() *File {
 	f.Metrics[InstanceIDKey] = getInstanceID(telemetryFile)
 	f.Metrics["OS"] = getOSInfo()
 	f.Metrics["deployment"] = getDeploymentInfo()
-	f.Metrics["hardware_arch"] = getHardwareInfo()
+	f.Metrics["hardware_arch"] = getHardwareInfo(ctx)
 
 	return f
 }
@@ -201,15 +203,42 @@ func getOSInfo() string {
 		zap.L().Sugar().Debugw("getting OS info from file", zap.String("file", filePath))
 		return readSystemReleaseFile(filePath)
 	}
-	return unknownOS
+	return unknownString
 }
 
-func getHardwareInfo() string {
-	gi, err := goInfo.GetInfo()
-	if err != nil {
-		return "unknown"
+func getHardwareInfo(ctx context.Context) string {
+	var unamePath string
+	var err error
+	if unamePath, err = exec.LookPath("uname"); err != nil {
+		zap.L().Sugar().Warnw("failed to get hardware info, uname binary is not found", zap.Error(err))
+		return fmt.Sprintf("%s %s", unknownString, unknownString)
 	}
-	return gi.Platform
+	args := []string{unamePath, "-mp"}
+	zap.L().Sugar().Debugw("executing command", zap.String("cmd", strings.Join(args, " ")))
+
+	cmdCtx, cancel := context.WithTimeout(ctx, pkgResultTimeout)
+	defer cancel()
+
+	cmd := exec.CommandContext(cmdCtx, args[0], args[1:]...) // #nosec G204
+	outputB, err := cmd.CombinedOutput()
+	return parseHardwareInfoOutput(outputB, err)
+}
+
+func parseHardwareInfoOutput(hwOutput []byte, hwErr error) string {
+	if hwErr != nil {
+		// If error is returned - something went wrong.
+		zap.L().Sugar().Debugw("cmd output", zap.ByteString("output", hwOutput), zap.Error(hwErr))
+		return fmt.Sprintf("%s %s", unknownString, unknownString)
+	}
+	scanner := bufio.NewScanner(bytes.NewReader(hwOutput))
+	for scanner.Scan() {
+		line := strings.Trim(scanner.Text(), " '\t")
+		if len(line) == 0 {
+			continue
+		}
+		return line
+	}
+	return fmt.Sprintf("%s %s", unknownString, unknownString)
 }
 
 func readOSReleaseFile(fileName string) string {
@@ -217,7 +246,7 @@ func readOSReleaseFile(fileName string) string {
 	f, err := os.Open(cleanFileName)
 	if err != nil {
 		zap.L().Sugar().Errorw("failed to open OS file", zap.Error(err), zap.String("file", cleanFileName))
-		return unknownOS
+		return unknownString
 	}
 	defer func() {
 		_ = f.Close()
@@ -236,10 +265,10 @@ func readOSReleaseFile(fileName string) string {
 
 	if err := scanner.Err(); err != nil {
 		zap.L().Sugar().Warnw("error reading OS release file", zap.String("file", cleanFileName), zap.Error(err))
-		return unknownOS
+		return unknownString
 	}
 
-	return unknownOS
+	return unknownString
 }
 
 func readSystemReleaseFile(fileName string) string {
@@ -247,7 +276,7 @@ func readSystemReleaseFile(fileName string) string {
 	f, err := os.Open(cleanFileName)
 	if err != nil {
 		zap.L().Sugar().Errorw("failed to open system release file", zap.Error(err), zap.String("file", cleanFileName))
-		return unknownOS
+		return unknownString
 	}
 	defer func() {
 		_ = f.Close()
@@ -260,7 +289,7 @@ func readSystemReleaseFile(fileName string) string {
 
 	if err := scanner.Err(); err != nil {
 		zap.L().Sugar().Warnw("error reading system release file", zap.String("file", cleanFileName), zap.Error(err))
-		return unknownOS
+		return unknownString
 	}
-	return unknownOS
+	return unknownString
 }
