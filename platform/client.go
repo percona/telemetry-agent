@@ -65,7 +65,7 @@ func WithResendTimeout(resendTimeout time.Duration) Option {
 	return func(c *Client) {
 		c.restyClient.SetRetryWaitTime(resendTimeout).
 			AddRetryCondition(
-				func(r *resty.Response, err error) bool {
+				func(r *resty.Response, _ error) bool {
 					return r.StatusCode() == http.StatusRequestTimeout ||
 						r.StatusCode() >= http.StatusInternalServerError
 				},

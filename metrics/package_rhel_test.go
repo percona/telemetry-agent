@@ -11,7 +11,6 @@ func TestIsRHELFamily(t *testing.T) {
 	t.Parallel()
 
 	for _, tt := range osNames {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			require.Equal(t, tt.expected, getDistroFamily(tt.osName))
@@ -21,6 +20,7 @@ func TestIsRHELFamily(t *testing.T) {
 
 func TestParseRhelPackageOutput(t *testing.T) {
 	t.Parallel()
+	rpmError := errors.New("rpm: --test may only be specified during package installation and erasure")
 
 	tests := []struct {
 		name                string
@@ -245,9 +245,9 @@ proxysql2|2.5.5|1.2.el9|proxysql-release-x86_64`),
 			name:                "rpm_error",
 			isPerconaPackage:    isPerconaPackage("percona-*"),
 			packageOutput:       []byte(``),
-			packageErr:          errors.New("rpm: --test may only be specified during package installation and erasure"),
+			packageErr:          rpmError,
 			expectedPackageList: nil,
-			expectErr:           errors.New("rpm: --test may only be specified during package installation and erasure"),
+			expectErr:           rpmError,
 		},
 		{
 			name:                "invalid_rpm_output",
@@ -260,13 +260,12 @@ proxysql2|2.5.5|1.2.el9|proxysql-release-x86_64`),
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
 			pkg, err := parseRhelPackageOutput(tt.packageOutput, tt.packageErr, tt.isPerconaPackage)
 			if tt.expectErr != nil {
-				require.ErrorAs(t, err, &tt.expectErr)
+				require.ErrorIs(t, err, tt.expectErr)
 			}
 
 			if tt.expectedPackageList != nil {

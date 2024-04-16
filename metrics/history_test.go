@@ -40,26 +40,26 @@ func TestWriteMetricsToHistory(t *testing.T) {
 	}{
 		{
 			name: "non_existing_directory",
-			setupTestData: func(t *testing.T, tmpDir, token string, currTime time.Time) {
+			setupTestData: func(t *testing.T, tmpDir, _ string, _ time.Time) {
 				t.Helper()
 				// make directory absent
 				_ = os.RemoveAll(tmpDir)
 			},
-			postCheckTestData: func(t *testing.T, tmpDir, historyFile, token string, currTime time.Time, req *platformReporter.ReportRequest) {
+			postCheckTestData: func(t *testing.T, tmpDir, _, _ string, _ time.Time, _ *platformReporter.ReportRequest) {
 				t.Helper()
 				// directory shall not be created
 				_, err := os.Stat(tmpDir)
-				require.Error(t, err, os.ErrNotExist)
+				require.ErrorIs(t, err, os.ErrNotExist)
 			},
 			request: &platformReporter.ReportRequest{},
 			wantErr: true,
 		},
 		{
 			name: "empty_request_empty_directory",
-			setupTestData: func(t *testing.T, tmpDir, token string, currTime time.Time) {
+			setupTestData: func(t *testing.T, _, _ string, _ time.Time) {
 				t.Helper()
 			},
-			postCheckTestData: func(t *testing.T, tmpDir, historyFile, token string, currTime time.Time, req *platformReporter.ReportRequest) {
+			postCheckTestData: func(t *testing.T, tmpDir, _, _ string, _ time.Time, _ *platformReporter.ReportRequest) {
 				t.Helper()
 				// no new files shall be created
 				checkDirectoryContentCount(t, tmpDir, 0)
@@ -76,7 +76,7 @@ func TestWriteMetricsToHistory(t *testing.T) {
 					fmt.Sprintf("%d-%s.json", (currTime.Add(-10*time.Minute)).Unix(), token),
 					fmt.Sprintf("%d-%s.json", (currTime.Add(-20*time.Minute)).Unix(), token))
 			},
-			postCheckTestData: func(t *testing.T, tmpDir, historyFile, token string, currTime time.Time, req *platformReporter.ReportRequest) {
+			postCheckTestData: func(t *testing.T, tmpDir, historyFile, token string, currTime time.Time, _ *platformReporter.ReportRequest) {
 				t.Helper()
 				checkDirectoryContentCount(t, tmpDir, 3)
 
@@ -93,10 +93,10 @@ func TestWriteMetricsToHistory(t *testing.T) {
 		},
 		{
 			name: "no_request_reports_empty_directory",
-			setupTestData: func(t *testing.T, tmpDir, token string, currTime time.Time) {
+			setupTestData: func(t *testing.T, _, _ string, _ time.Time) {
 				t.Helper()
 			},
-			postCheckTestData: func(t *testing.T, tmpDir, historyFile, token string, currTime time.Time, req *platformReporter.ReportRequest) {
+			postCheckTestData: func(t *testing.T, tmpDir, _, _ string, _ time.Time, _ *platformReporter.ReportRequest) {
 				t.Helper()
 				// no new files shall be created
 				checkDirectoryContentCount(t, tmpDir, 0)
@@ -113,7 +113,7 @@ func TestWriteMetricsToHistory(t *testing.T) {
 					fmt.Sprintf("%d-%s.json", (currTime.Add(-10*time.Minute)).Unix(), token),
 					fmt.Sprintf("%d-%s.json", (currTime.Add(-20*time.Minute)).Unix(), token))
 			},
-			postCheckTestData: func(t *testing.T, tmpDir, historyFile, token string, currTime time.Time, req *platformReporter.ReportRequest) {
+			postCheckTestData: func(t *testing.T, tmpDir, historyFile, token string, currTime time.Time, _ *platformReporter.ReportRequest) {
 				t.Helper()
 				checkDirectoryContentCount(t, tmpDir, 3)
 
@@ -130,10 +130,10 @@ func TestWriteMetricsToHistory(t *testing.T) {
 		},
 		{
 			name: "single_report_empty_directory",
-			setupTestData: func(t *testing.T, tmpDir, token string, currTime time.Time) {
+			setupTestData: func(t *testing.T, _, _ string, _ time.Time) {
 				t.Helper()
 			},
-			postCheckTestData: func(t *testing.T, tmpDir, historyFile, token string, currTime time.Time, req *platformReporter.ReportRequest) {
+			postCheckTestData: func(t *testing.T, tmpDir, historyFile, _ string, _ time.Time, req *platformReporter.ReportRequest) {
 				t.Helper()
 				// only one file shall be created
 				checkDirectoryContentCount(t, tmpDir, 1)
@@ -194,7 +194,6 @@ func TestWriteMetricsToHistory(t *testing.T) {
 	}
 
 	for _, tt := range testCases {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -276,7 +275,7 @@ func TestCleanupMetricsHistory(t *testing.T) {
 		},
 		{
 			name: "empty_directory",
-			setupTestData: func(t *testing.T, tmpDir string) {
+			setupTestData: func(t *testing.T, _ string) {
 				t.Helper()
 			},
 			postCheckTestData: func(t *testing.T, tmpDir string) {
@@ -297,7 +296,7 @@ func TestCleanupMetricsHistory(t *testing.T) {
 				t.Helper()
 				// directory shall not be created
 				_, err := os.Stat(tmpDir)
-				require.Error(t, err, os.ErrNotExist)
+				require.ErrorIs(t, err, os.ErrNotExist)
 			},
 			keepInterval: 3600,
 			wantErr:      true,
@@ -305,7 +304,6 @@ func TestCleanupMetricsHistory(t *testing.T) {
 	}
 
 	for _, tt := range testCases {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
