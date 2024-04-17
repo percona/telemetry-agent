@@ -17,6 +17,7 @@ help:                   ## Display this help message
 		awk -F ':.*?## ' 'NF==2 {printf "  %-26s%s\n", $$1, $$2}'
 
 init:                   ## Install development tools
+	rm -rf bin
 	cd tools && go generate -x -tags=tools
 
 build:                ## Compile using plain go build
@@ -30,6 +31,7 @@ format:                 ## Format source code
 	bin/goimports -local github.com/percona/telemetry-agent -l -w .
 
 check:                  ## Run checks/linters for the whole project
+	make format
 	bin/go-consistent -exclude=tools -pedantic ./...
 	LOG_LEVEL=error bin/golangci-lint run
 

@@ -70,8 +70,10 @@ func ScrapeInstalledPackages(ctx context.Context) []*Package {
 	case distroFamilyDebian:
 		pkgFunc = queryDebianPackage
 		pkgList = append(pkgList, getDebianPerconaPackages()...)
+		pkgList = append(pkgList, getDebianExternalPackages()...)
 	case distroFamilyRhel:
 		pkgFunc = queryRhelPackage
+		pkgList = append(pkgList, getRhelExternalPackages()...)
 	default:
 		zap.L().Sugar().Warnw("unsupported package system", zap.String("OS", localOs))
 		return toReturn
@@ -152,9 +154,8 @@ func getCommonExternalPackages() []string {
 		// PG extensions
 		"etcd*",
 		"haproxy",
-		"patroni",
+		"patroni*",
 		"pg*",
-		"postgis",
-		"wal2json",
+		"postgis*",
 	}
 }

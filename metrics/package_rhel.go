@@ -151,3 +151,11 @@ func parseRhelPackageRegistry(packageRepository string, isPerconaPackage bool) P
 	}
 	return toReturn
 }
+
+// getRhelExternalPackages returns list of external package patterns that are unique for RHEL systems.
+func getRhelExternalPackages() []string {
+	return []string{
+		// PG extensions
+		"wal2json*",
+	}
+}

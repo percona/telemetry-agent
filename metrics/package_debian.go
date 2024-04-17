@@ -262,3 +262,11 @@ func getDebianPerconaPackages() []string {
 		"Percona-*",
 	}
 }
+
+// getDebianExternalPackages returns list of external package patterns that are unique for Debian systems.
+func getDebianExternalPackages() []string {
+	return []string{
+		// PG extensions
+		"postgresql-*",
+	}
+}
