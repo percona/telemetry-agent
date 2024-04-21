@@ -79,7 +79,7 @@ func checkDirectoryContentCount(t *testing.T, tmpDir string, wantCount int) {
 	t.Helper()
 	files, err := os.ReadDir(tmpDir)
 	require.NoError(t, err)
-	require.Equal(t, len(files), wantCount)
+	require.Len(t, files, wantCount)
 }
 
 func checkHistoryFileContent(t *testing.T, tmpDir, historyFile string, req *platformReporter.ReportRequest) {

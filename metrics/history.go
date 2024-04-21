@@ -33,7 +33,7 @@ import (
 // Percona Platform telemetry request into it. Content is written using JSON format.
 func WriteMetricsToHistory(historyFile string, platformReport *platformReporter.ReportRequest) error {
 	l := zap.L().Sugar()
-	if platformReport == nil || len(platformReport.Reports) == 0 {
+	if platformReport == nil || len(platformReport.GetReports()) == 0 {
 		l.Errorw("attempt to write invalid Percona Platform report into history file",
 			zap.Any("report", platformReport))
 		return errors.New("invalid Percona Platform report, ReportRequest.Reports is empty")
@@ -121,7 +121,7 @@ func validateDirectory(dirPath string) error {
 		return err
 	}
 	if !info.IsDir() {
-		return fmt.Errorf("provided path is not a directory")
+		return errors.New("provided path is not a directory")
 	}
 	return nil
 }

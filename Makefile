@@ -46,4 +46,4 @@ test-crosscover:        ## Run tests and collect cross-package coverage informat
 
 run:                    ## Run telemetry-agent with race detector
 	go run -race cmd/telemetry-agent/main.go \
-		--verbose --dev-mode
+		--log.verbose --log.dev-mode
