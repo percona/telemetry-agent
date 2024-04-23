@@ -33,7 +33,7 @@ func queryDebianPackage(ctx context.Context, packageNamePattern string) ([]*Pack
 
 func parseDebianPackageOutput(dpkgOutput []byte, dpkgErr error, isPerconaPackage bool) ([]*Package, error) { //nolint:cyclop
 	if dpkgErr != nil {
-		if strings.Contains(dpkgErr.Error(), "no packages found matching") {
+		if strings.Contains(string(dpkgOutput), "no packages found matching") {
 			// package is not installed
 			return nil, errPackageNotFound
 		}
