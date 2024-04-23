@@ -230,7 +230,7 @@ ii |pmm2-client|2.41.2-6.1.jammy
 		{
 			name:                "percona_not_installed",
 			isPerconaPackage:    isPerconaPackage("percona-*"),
-			packageOutput:       []byte(`un |percona-xtrabackup-81|`),
+			packageOutput:       []byte(`dpkg-query: no packages found matching percona-*`),
 			packageErr:          errors.New("dpkg-query: no packages found matching percona-*"),
 			expectedPackageList: nil,
 			expectErr:           errPackageNotFound,
