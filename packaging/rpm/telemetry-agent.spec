@@ -65,11 +65,24 @@ install -m 0644 github.com/percona/percona-telemetry-agent/packaging/conf/percon
 if [ ! -d /run/percona-telemetry-agent ]; then
     install -m 0755 -d -oroot -groot /run/percona-telemetry-agent
 fi
+# Create new linux group
+groupadd percona-telemetry
+# For telemetry-agent to be able to read/remove the metric files
+usermod -a -G percona-telemetry daemon
 
 %post -n percona-telemetry-agent
 %systemd_post percona-telemetry-agent.service
 /usr/bin/systemctl enable percona-telemetry-agent >/dev/null 2>&1 || :
 /usr/bin/systemctl start percona-telemetry-agent
+# Create telemetry history directory
+mkdir -p /usr/local/percona/telemetry/history
+chown daemon:percona-telemetry /usr/local/percona/telemetry/history
+chmod g+s /usr/local/percona/telemetry/history
+chmod u+s /usr/local/percona/telemetry/history
+chown daemon:percona-telemetry /usr/local/percona/telemetry
+# Fix permissions to be able to create Percona telemetry uuid file
+chgrp percona-telemetry /usr/local/percona
+chmod 775 /usr/local/percona
 
 %preun -n percona-telemetry-agent
 /usr/bin/systemctl stop percona-telemetry-agent || true

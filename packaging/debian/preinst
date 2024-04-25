@@ -4,6 +4,12 @@ if [ ! -d /run/percona-telemetry-agent ]; then
     install -m 0755 -d -oroot -groot /run/percona-telemetry-agent
 fi
 
+# Create new linux group
+groupadd percona-telemetry
+
+# For telemetry-agent to be able to read/remove the metric files
+usermod -a -G percona-telemetry daemon
+
 #DEBHELPER#
 
 exit 0
