@@ -30,7 +30,7 @@ import (
 func writeTempFiles(t *testing.T, path string, files ...string) {
 	t.Helper()
 	for _, file := range files {
-		err := os.WriteFile(filepath.Join(path, file), []byte(file), 0o600)
+		err := os.WriteFile(filepath.Join(path, file), []byte(file), metricsFilePermissions)
 		require.NoError(t, err)
 	}
 }

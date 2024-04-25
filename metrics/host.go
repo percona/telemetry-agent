@@ -95,7 +95,7 @@ func getInstanceID(instanceFile string) string { //nolint:cyclop
 	dirName := filepath.Dir(cleanInstanceFile)
 	if _, err := os.Stat(dirName); os.IsNotExist(err) {
 		// directory is absent, creating
-		if err := os.MkdirAll(dirName, os.ModePerm); err != nil {
+		if err := os.MkdirAll(dirName, os.ModePerm|0o775); err != nil {
 			l.Errorw("can't create directory, fallback to random UUID",
 				zap.String("directory", dirName),
 				zap.Error(err))
@@ -166,7 +166,7 @@ func getRandomUUID() string {
 }
 
 func createTelemetryFile(instanceFile, instanceID string) {
-	if err := os.WriteFile(instanceFile, []byte(fmt.Sprintf("%s:%s\n", InstanceIDKey, instanceID)), 0o600); err != nil {
+	if err := os.WriteFile(instanceFile, []byte(fmt.Sprintf("%s:%s\n", InstanceIDKey, instanceID)), metricsFilePermissions); err != nil {
 		zap.L().Sugar().With(zap.String("file", instanceFile)).
 			Errorw("failed to write Percona telemetry file", zap.Error(err))
 	}

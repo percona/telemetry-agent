@@ -43,14 +43,23 @@ import (
 
 // Creates the minimum required directory structure for Telemetry Agent functionality.
 func createTelemetryDirs(dirs ...string) error {
+	const historyDirPermissions = 0o775
+
 	for _, d := range dirs {
 		zap.L().Sugar().Debugw("checking/creating telemetry directory", zap.String("directory", d))
 
-		if err := os.MkdirAll(d, os.ModePerm); err != nil {
-			zap.L().Sugar().Errorw("can't create directory",
-				zap.String("directory", d),
-				zap.Error(err))
-			return err
+		cleanPath := filepath.Clean(d)
+		if _, err := os.Stat(cleanPath); err != nil {
+			if !os.IsNotExist(err) {
+				return err
+			}
+
+			if err = os.MkdirAll(d, os.ModeDir|historyDirPermissions); err != nil {
+				zap.L().Sugar().Errorw("can't create directory",
+					zap.String("directory", d),
+					zap.Error(err))
+				return err
+			}
 		}
 	}
 	return nil
