@@ -5,4 +5,17 @@ mkdir -p /var/log/percona
 systemctl daemon-reload
 systemctl enable percona-telemetry-agent.service || true
 systemctl start percona-telemetry-agent.service
+
+# Create telemetry history directory
+mkdir -p /usr/local/percona/telemetry/history
+chown daemon:percona-telemetry /usr/local/percona/telemetry/history
+chmod g+s /usr/local/percona/telemetry/history
+chmod u+s /usr/local/percona/telemetry/history
+
+chown daemon:percona-telemetry /usr/local/percona/telemetry
+
+# Fix permissions to be able to create Percona telemetry uuid file
+chgrp percona-telemetry /usr/local/percona
+chmod 775 /usr/local/percona
+
 exit 0
