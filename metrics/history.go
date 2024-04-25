@@ -29,6 +29,10 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
+const (
+	metricsFilePermissions = 0o755
+)
+
 // WriteMetricsToHistory creates a new telemetry history file and writes the content of
 // Percona Platform telemetry request into it. Content is written using JSON format.
 func WriteMetricsToHistory(historyFile string, platformReport *platformReporter.ReportRequest) error {
@@ -54,7 +58,7 @@ func WriteMetricsToHistory(historyFile string, platformReport *platformReporter.
 		return fmt.Errorf("can't marshal Percona Platform report into JSON: %w", err)
 	}
 
-	if err := os.WriteFile(cleanFilePath, jsonBytes, 0o600); err != nil {
+	if err := os.WriteFile(cleanFilePath, jsonBytes, metricsFilePermissions); err != nil {
 		l.Errorw("failed to write history file",
 			zap.String("file", historyFile),
 			zap.Error(err))

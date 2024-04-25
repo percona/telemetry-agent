@@ -59,7 +59,7 @@ func TestParseMetricsFile(t *testing.T) {
 			name: "empty_file",
 			setupTestData: func(t *testing.T, tmpDir, metricsFile string) {
 				t.Helper()
-				err := os.WriteFile(filepath.Join(tmpDir, metricsFile), []byte(""), 0o600)
+				err := os.WriteFile(filepath.Join(tmpDir, metricsFile), []byte(""), metricsFilePermissions)
 				require.NoError(t, err)
 			},
 			postCheckTestData: func(t *testing.T, tmpDir, metricsFile string, parsedMetrics *File) {

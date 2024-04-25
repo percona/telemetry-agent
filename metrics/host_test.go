@@ -81,7 +81,7 @@ func TestGetInstanceID(t *testing.T) {
 			name: "file_presents_single_line",
 			setupTestData: func(t *testing.T, tmpDir, instanceFile, instanceID string) {
 				t.Helper()
-				err := os.WriteFile(filepath.Join(tmpDir, instanceFile), []byte(fmt.Sprintf("%s:%s\n", InstanceIDKey, instanceID)), 0o600)
+				err := os.WriteFile(filepath.Join(tmpDir, instanceFile), []byte(fmt.Sprintf("%s:%s\n", InstanceIDKey, instanceID)), metricsFilePermissions)
 				require.NoError(t, err)
 			},
 			postCheckTestData: func(t *testing.T, tmpDir, instanceFile, wantInstanceID string) {
@@ -96,7 +96,7 @@ func TestGetInstanceID(t *testing.T) {
 			name: "file_presents_single_line_key_corrupted",
 			setupTestData: func(t *testing.T, tmpDir, instanceFile, instanceID string) {
 				t.Helper()
-				err := os.WriteFile(filepath.Join(tmpDir, instanceFile), []byte(fmt.Sprintf("%scorrupt:%s\n", InstanceIDKey, instanceID)), 0o600)
+				err := os.WriteFile(filepath.Join(tmpDir, instanceFile), []byte(fmt.Sprintf("%scorrupt:%s\n", InstanceIDKey, instanceID)), metricsFilePermissions)
 				require.NoError(t, err)
 			},
 			postCheckTestData: func(t *testing.T, tmpDir, instanceFile, wantInstanceID string) {
@@ -111,7 +111,7 @@ func TestGetInstanceID(t *testing.T) {
 			name: "file_presents_single_line_value_corrupted",
 			setupTestData: func(t *testing.T, tmpDir, instanceFile, instanceID string) {
 				t.Helper()
-				err := os.WriteFile(filepath.Join(tmpDir, instanceFile), []byte(fmt.Sprintf("%s:%scorrupt\n", InstanceIDKey, instanceID)), 0o600)
+				err := os.WriteFile(filepath.Join(tmpDir, instanceFile), []byte(fmt.Sprintf("%s:%scorrupt\n", InstanceIDKey, instanceID)), metricsFilePermissions)
 				require.NoError(t, err)
 			},
 			postCheckTestData: func(t *testing.T, tmpDir, instanceFile, wantInstanceID string) {
