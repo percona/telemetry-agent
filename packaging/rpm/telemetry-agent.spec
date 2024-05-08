@@ -86,9 +86,12 @@ chmod 775 /usr/local/percona
 
 %preun -n percona-telemetry-agent
 /usr/bin/systemctl stop percona-telemetry-agent || true
+%systemd_preun percona-telemetry-agent.service
 
 %postun -n percona-telemetry-agent
 %systemd_postun_with_restart percona-telemetry-agent.service
+systemctl daemon-reload
+/usr/sbin/groupdel percona-telemetry > /dev/null 2>&1 || true
 
 %files -n percona-telemetry-agent
 %{_bindir}/percona-telemetry-agent
