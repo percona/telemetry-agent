@@ -7,11 +7,12 @@ if [ -f /usr/share/debconf/confmodule ]; then
 fi
 
 case "$1" in
-	purge | remove)
+	remove)
+	systemctl daemon-reload
 	groupdel percona-telemetry || true
 	;;
 
-	upgrade | failed-upgrade | abort-install | abort-upgrade | disappear) ;;
+	purge | upgrade | failed-upgrade | abort-install | abort-upgrade | disappear) ;;
 
 	*)
 	echo "postrm called with unknown argument '$1'" 1>&2

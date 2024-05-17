@@ -80,6 +80,7 @@ chown daemon:percona-telemetry /usr/local/percona/telemetry/history
 chmod g+s /usr/local/percona/telemetry/history
 chmod u+s /usr/local/percona/telemetry/history
 chown daemon:percona-telemetry /usr/local/percona/telemetry
+chmod -R go+w %{_log_dir}
 # Fix permissions to be able to create Percona telemetry uuid file
 chgrp percona-telemetry /usr/local/percona
 chmod 775 /usr/local/percona
