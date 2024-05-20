@@ -16,25 +16,25 @@
 package metrics
 
 import (
-    "context"
-    "errors"
-    "strings"
-    "time"
+	"context"
+	"errors"
+	"strings"
+	"time"
 
-    "go.uber.org/zap"
+	"go.uber.org/zap"
 )
 
 const (
-    pkgResultTimeout    = 30 * time.Second
-    distroFamilyUnknown = iota
-    distroFamilyRhel
-    distroFamilyDebian
+	pkgResultTimeout    = 30 * time.Second
+	distroFamilyUnknown = iota
+	distroFamilyRhel
+	distroFamilyDebian
 )
 
 var (
-    errPackageManagerNotFound    = errors.New("no package manager found")
-    errPackageNotFound           = errors.New("package is not found")
-    errPackageRepositoryNotFound = errors.New("package repository is not found")
+	errPackageManagerNotFound    = errors.New("no package manager found")
+	errPackageNotFound           = errors.New("package is not found")
+	errPackageRepositoryNotFound = errors.New("package repository is not found")
 )
 
 // NOTE: the logic in this file is designed in a way "do our best to provide value", i.e. in case an error appears
@@ -42,15 +42,15 @@ var (
 
 // PackageRepository represents a repository where a software package is located.
 type PackageRepository struct {
-    Name      string `json:"name"`
-    Component string `json:"component"`
+	Name      string `json:"name"`
+	Component string `json:"component"`
 }
 
 // Package represents a software package with its name and version.
 type Package struct {
-    Name       string            `json:"name"`
-    Version    string            `json:"version"`
-    Repository PackageRepository `json:"repository"`
+	Name       string            `json:"name"`
+	Version    string            `json:"version"`
+	Repository PackageRepository `json:"repository"`
 }
 
 // queryPkgFunc represents a function type for querying package information from particular package manager (dpkg or rpm).
@@ -59,96 +59,96 @@ type queryPkgFunc func(ctx context.Context, localOS, packageName string) ([]*Pac
 // ScrapeInstalledPackages scrapes the installed packages on the host and returns a slice of Package structs along with any errors encountered.
 // The function uses the localOS variable to determine the package manager to use.
 func ScrapeInstalledPackages(ctx context.Context) []*Package {
-    pkgList := getCommonPerconaPackages()
-    pkgList = append(pkgList, getCommonExternalPackages()...)
-    localOS := getOSInfo()
+	pkgList := getCommonPerconaPackages()
+	pkgList = append(pkgList, getCommonExternalPackages()...)
+	localOS := getOSInfo()
 
-    toReturn := make([]*Package, 0, 1)
-    var pkgFunc queryPkgFunc
+	toReturn := make([]*Package, 0, 1)
+	var pkgFunc queryPkgFunc
 
-    distroFamily := getDistroFamily(localOS)
-    switch distroFamily {
-    case distroFamilyDebian:
-        pkgFunc = queryDebianPackage
-        pkgList = append(pkgList, getDebianPerconaPackages()...)
-        pkgList = append(pkgList, getDebianExternalPackages()...)
-    case distroFamilyRhel:
-        pkgFunc = queryRhelPackage
-        pkgList = append(pkgList, getRhelExternalPackages()...)
-    default:
-        zap.L().Sugar().Warnw("unsupported package system", zap.String("OS", localOS))
-        return toReturn
-    }
+	distroFamily := getDistroFamily(localOS)
+	switch distroFamily {
+	case distroFamilyDebian:
+		pkgFunc = queryDebianPackage
+		pkgList = append(pkgList, getDebianPerconaPackages()...)
+		pkgList = append(pkgList, getDebianExternalPackages()...)
+	case distroFamilyRhel:
+		pkgFunc = queryRhelPackage
+		pkgList = append(pkgList, getRhelExternalPackages()...)
+	default:
+		zap.L().Sugar().Warnw("unsupported package system", zap.String("OS", localOS))
+		return toReturn
+	}
 
-    for _, pkgNamePattern := range pkgList {
-        pkgL, err := pkgFunc(ctx, localOS, pkgNamePattern)
-        if err != nil {
-            if errors.Is(err, errPackageManagerNotFound) {
-                // no need to check the rest of package patterns.
-                break
-            }
-            if !errors.Is(err, errPackageNotFound) {
-                zap.L().Sugar().Warnw("failed to get package info", zap.Error(err), zap.String("package", pkgNamePattern))
-            }
-            // go to next package pattern silently
-            continue
-        }
-        // packages are installed
-        toReturn = append(toReturn, pkgL...)
-    }
-    return toReturn
+	for _, pkgNamePattern := range pkgList {
+		pkgL, err := pkgFunc(ctx, localOS, pkgNamePattern)
+		if err != nil {
+			if errors.Is(err, errPackageManagerNotFound) {
+				// no need to check the rest of package patterns.
+				break
+			}
+			if !errors.Is(err, errPackageNotFound) {
+				zap.L().Sugar().Warnw("failed to get package info", zap.Error(err), zap.String("package", pkgNamePattern))
+			}
+			// go to next package pattern silently
+			continue
+		}
+		// packages are installed
+		toReturn = append(toReturn, pkgL...)
+	}
+	return toReturn
 }
 
 func getDistroFamily(name string) int {
-    rhelPrefixes := []string{"el", "centos", "oracle", "rocky", "red hat", "amazon", "alma"}
-    debianPrefixes := []string{"debian", "ubuntu"}
+	rhelPrefixes := []string{"el", "centos", "oracle", "rocky", "red hat", "amazon", "alma"}
+	debianPrefixes := []string{"debian", "ubuntu"}
 
-    nameL := strings.ToLower(name)
-    for _, prefix := range rhelPrefixes {
-        if strings.HasPrefix(nameL, prefix) {
-            return distroFamilyRhel
-        }
-    }
+	nameL := strings.ToLower(name)
+	for _, prefix := range rhelPrefixes {
+		if strings.HasPrefix(nameL, prefix) {
+			return distroFamilyRhel
+		}
+	}
 
-    for _, prefix := range debianPrefixes {
-        if strings.HasPrefix(nameL, prefix) {
-            return distroFamilyDebian
-        }
-    }
-    return distroFamilyUnknown
+	for _, prefix := range debianPrefixes {
+		if strings.HasPrefix(nameL, prefix) {
+			return distroFamilyDebian
+		}
+	}
+	return distroFamilyUnknown
 }
 
 func isPerconaPackage(packageNamePattern string) bool {
-    if len(packageNamePattern) == 0 {
-        return false
-    }
+	if len(packageNamePattern) == 0 {
+		return false
+	}
 
-    perconaPkgList := append(getCommonPerconaPackages(), getDebianPerconaPackages()...)
-    for _, pkgPattern := range perconaPkgList {
-        if packageNamePattern == pkgPattern {
-            return true
-        }
-    }
-    return false
+	perconaPkgList := append(getCommonPerconaPackages(), getDebianPerconaPackages()...)
+	for _, pkgPattern := range perconaPkgList {
+		if packageNamePattern == pkgPattern {
+			return true
+		}
+	}
+	return false
 }
 
 // getCommonPerconaPackages returns list of Percona package patterns that have the same names both on Debian and RHEL systems.
 func getCommonPerconaPackages() []string {
-    return []string{
-        "percona-*",
-        "proxysql*",
-        "pmm*",
-    }
+	return []string{
+		"percona-*",
+		"proxysql*",
+		"pmm*",
+	}
 }
 
 // getCommonExternalPackages returns list of non Percona package patterns that have the same names both on Debian and RHEL systems.
 func getCommonExternalPackages() []string {
-    return []string{
-        // PG extensions
-        "etcd*",
-        "haproxy",
-        "patroni*",
-        "pg*",
-        "postgis*",
-    }
+	return []string{
+		// PG extensions
+		"etcd*",
+		"haproxy",
+		"patroni*",
+		"pg*",
+		"postgis*",
+	}
 }
