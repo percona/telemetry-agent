@@ -32,6 +32,7 @@ const (
 )
 
 var (
+	errPackageManagerNotFound    = errors.New("no package manager found")
 	errPackageNotFound           = errors.New("package is not found")
 	errPackageRepositoryNotFound = errors.New("package repository is not found")
 )
@@ -53,7 +54,7 @@ type Package struct {
 }
 
 // queryPkgFunc represents a function type for querying package information from particular package manager (dpkg or rpm).
-type queryPkgFunc func(ctx context.Context, packageName string) ([]*Package, error)
+type queryPkgFunc func(ctx context.Context, localOs, packageName string) ([]*Package, error)
 
 // ScrapeInstalledPackages scrapes the installed packages on the host and returns a slice of Package structs along with any errors encountered.
 // The function uses the localOs variable to determine the package manager to use.
@@ -80,8 +81,12 @@ func ScrapeInstalledPackages(ctx context.Context) []*Package {
 	}
 
 	for _, pkgNamePattern := range pkgList {
-		pkgL, err := pkgFunc(ctx, pkgNamePattern)
+		pkgL, err := pkgFunc(ctx, localOs, pkgNamePattern)
 		if err != nil {
+			if errors.Is(err, errPackageManagerNotFound) {
+				// no need to check the rest of package patterns.
+				break
+			}
 			if !errors.Is(err, errPackageNotFound) {
 				zap.L().Sugar().Warnw("failed to get package info", zap.Error(err), zap.String("package", pkgNamePattern))
 			}
@@ -89,18 +94,6 @@ func ScrapeInstalledPackages(ctx context.Context) []*Package {
 			continue
 		}
 		// packages are installed
-		if distroFamily == distroFamilyDebian {
-			// need extra processing - get package repository info.
-			for _, pkg := range pkgL {
-				pkgRepository, repoErr := queryDebianRepository(ctx, pkg.Name, isPerconaPackage(pkgNamePattern))
-				if repoErr != nil {
-					zap.L().Sugar().Warnw("failed to get package repository info", zap.Error(repoErr), zap.String("package", pkg.Name))
-					// go to next package silently
-					continue
-				}
-				pkg.Repository = *pkgRepository
-			}
-		}
 		toReturn = append(toReturn, pkgL...)
 	}
 	return toReturn
