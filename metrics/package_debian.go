@@ -19,7 +19,7 @@ var (
 	errUnexpectedConfiguredRepoLine = errors.New("unexpected configured package repository line")
 )
 
-func queryDebianPackage(ctx context.Context, packageNamePattern string) ([]*Package, error) {
+func queryDebianPackage(ctx context.Context, _, packageNamePattern string) ([]*Package, error) {
 	args := []string{"dpkg-query", "-f", "'${db:Status-Abbrev}|${binary:Package}|${source:Version}\n'", "-W", packageNamePattern}
 	zap.L().Sugar().Debugw("executing command", zap.String("cmd", strings.Join(args, " ")))
 
@@ -28,7 +28,21 @@ func queryDebianPackage(ctx context.Context, packageNamePattern string) ([]*Pack
 
 	cmd := exec.CommandContext(cmdCtx, args[0], args[1:]...) // #nosec G204
 	outputB, err := cmd.CombinedOutput()
-	return parseDebianPackageOutput(outputB, err, isPerconaPackage(packageNamePattern))
+	pkgL, err := parseDebianPackageOutput(outputB, err, isPerconaPackage(packageNamePattern))
+	if err != nil {
+		return nil, err
+	}
+	// need extra processing - get package repository info.
+	for _, pkg := range pkgL {
+		pkgRepository, repoErr := queryDebianRepository(ctx, pkg.Name, isPerconaPackage(packageNamePattern))
+		if repoErr != nil {
+			zap.L().Sugar().Warnw("failed to get package repository info", zap.Error(repoErr), zap.String("package", pkg.Name))
+			// go to next package silently
+			continue
+		}
+		pkg.Repository = *pkgRepository
+	}
+	return pkgL, nil
 }
 
 func parseDebianPackageOutput(dpkgOutput []byte, dpkgErr error, isPerconaPackage bool) ([]*Package, error) { //nolint:cyclop

@@ -32,6 +32,7 @@ const (
 )
 
 var (
+	errPackageManagerNotFound    = errors.New("no package manager found")
 	errPackageNotFound           = errors.New("package is not found")
 	errPackageRepositoryNotFound = errors.New("package repository is not found")
 )
@@ -53,19 +54,19 @@ type Package struct {
 }
 
 // queryPkgFunc represents a function type for querying package information from particular package manager (dpkg or rpm).
-type queryPkgFunc func(ctx context.Context, packageName string) ([]*Package, error)
+type queryPkgFunc func(ctx context.Context, localOS, packageName string) ([]*Package, error)
 
 // ScrapeInstalledPackages scrapes the installed packages on the host and returns a slice of Package structs along with any errors encountered.
-// The function uses the localOs variable to determine the package manager to use.
+// The function uses the localOS variable to determine the package manager to use.
 func ScrapeInstalledPackages(ctx context.Context) []*Package {
 	pkgList := getCommonPerconaPackages()
 	pkgList = append(pkgList, getCommonExternalPackages()...)
-	localOs := getOSInfo()
+	localOS := getOSInfo()
 
 	toReturn := make([]*Package, 0, 1)
 	var pkgFunc queryPkgFunc
 
-	distroFamily := getDistroFamily(localOs)
+	distroFamily := getDistroFamily(localOS)
 	switch distroFamily {
 	case distroFamilyDebian:
 		pkgFunc = queryDebianPackage
@@ -75,13 +76,17 @@ func ScrapeInstalledPackages(ctx context.Context) []*Package {
 		pkgFunc = queryRhelPackage
 		pkgList = append(pkgList, getRhelExternalPackages()...)
 	default:
-		zap.L().Sugar().Warnw("unsupported package system", zap.String("OS", localOs))
+		zap.L().Sugar().Warnw("unsupported package system", zap.String("OS", localOS))
 		return toReturn
 	}
 
 	for _, pkgNamePattern := range pkgList {
-		pkgL, err := pkgFunc(ctx, pkgNamePattern)
+		pkgL, err := pkgFunc(ctx, localOS, pkgNamePattern)
 		if err != nil {
+			if errors.Is(err, errPackageManagerNotFound) {
+				// no need to check the rest of package patterns.
+				break
+			}
 			if !errors.Is(err, errPackageNotFound) {
 				zap.L().Sugar().Warnw("failed to get package info", zap.Error(err), zap.String("package", pkgNamePattern))
 			}
@@ -89,18 +94,6 @@ func ScrapeInstalledPackages(ctx context.Context) []*Package {
 			continue
 		}
 		// packages are installed
-		if distroFamily == distroFamilyDebian {
-			// need extra processing - get package repository info.
-			for _, pkg := range pkgL {
-				pkgRepository, repoErr := queryDebianRepository(ctx, pkg.Name, isPerconaPackage(pkgNamePattern))
-				if repoErr != nil {
-					zap.L().Sugar().Warnw("failed to get package repository info", zap.Error(repoErr), zap.String("package", pkg.Name))
-					// go to next package silently
-					continue
-				}
-				pkg.Repository = *pkgRepository
-			}
-		}
 		toReturn = append(toReturn, pkgL...)
 	}
 	return toReturn

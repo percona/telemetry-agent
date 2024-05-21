@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"os/exec"
 	"strings"
@@ -12,34 +11,47 @@ import (
 	"go.uber.org/zap"
 )
 
-func queryRhelPackage(ctx context.Context, packageNamePattern string) ([]*Package, error) {
-	args, err := getRhelPackageManager()
+func queryRhelPackage(ctx context.Context, localOS, packageNamePattern string) ([]*Package, error) {
+	pkgMngCmd, err := getRhelPackageManagerCmd(localOS)
 	if err != nil {
 		return nil, err
 	}
-	args = append(args, "--qf", "'%{name}|%{version}|%{release}|%{from_repo}'", "--installed", packageNamePattern)
-	zap.L().Sugar().Debugw("executing command", zap.String("cmd", strings.Join(args, " ")))
+	pkgMngCmd = append(pkgMngCmd, packageNamePattern)
+	zap.L().Sugar().Debugw("executing command", zap.String("cmd", strings.Join(pkgMngCmd, " ")))
 
 	cmdCtx, cancel := context.WithTimeout(ctx, pkgResultTimeout)
 	defer cancel()
 
-	cmd := exec.CommandContext(cmdCtx, args[0], args[1:]...) // #nosec G204
+	cmd := exec.CommandContext(cmdCtx, pkgMngCmd[0], pkgMngCmd[1:]...) // #nosec G204
 	outputB, err := cmd.CombinedOutput()
 	return parseRhelPackageOutput(outputB, err, isPerconaPackage(packageNamePattern))
 }
 
-func getRhelPackageManager() ([]string, error) {
-	pkgMngs := [][]string{
-		{"dnf", "repoquery"},
-		{"yum", "repoquery"},
-		{"repoquery"},
-	}
-	for _, pkgMng := range pkgMngs {
-		if _, err := exec.LookPath(pkgMng[0]); err == nil {
-			return pkgMng, nil
+func getRhelPackageManagerCmd(localOS string) ([]string, error) {
+	const newQueryFormat = "'%{name}|%{version}|%{release}|%{from_repo}'"
+	const oldQueryFormat = "'%{name}|%{version}|%{release}|%{ui_from_repo}'"
+	var pkgMngCmds [][]string
+
+	localOSLower := strings.ToLower(localOS)
+	switch {
+	// CentOS 7 and Amazon Linux 2 has old 'repoquery' tool version and requires old query format.
+	case strings.HasPrefix(localOSLower, "centos"), strings.HasPrefix(localOSLower, "amazon linux 2"):
+		pkgMngCmds = [][]string{
+			{"repoquery", "--qf", oldQueryFormat, "--installed"},
+		}
+	default:
+		pkgMngCmds = [][]string{
+			{"repoquery", "--qf", newQueryFormat, "--installed"},
+			{"yum", "repoquery", "--qf", newQueryFormat, "--installed"},
+			{"dnf", "repoquery", "--qf", newQueryFormat, "--installed"},
 		}
 	}
-	return nil, errors.New("no package manager found")
+	for _, pkgMngCmd := range pkgMngCmds {
+		if _, err := exec.LookPath(pkgMngCmd[0]); err == nil {
+			return pkgMngCmd, nil
+		}
+	}
+	return nil, errPackageManagerNotFound
 }
 
 func parseRhelPackageOutput(packageOutput []byte, rpmErr error, isPerconaPackage bool) ([]*Package, error) {
