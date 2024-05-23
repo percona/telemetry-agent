@@ -16,6 +16,9 @@ BuildRequires:  pkgconfig(systemd)
 Requires(post):   systemd
 Requires(preun):  systemd
 Requires(postun): systemd
+%if 0%{?rhel} <= 7
+Requires:  yum-utils
+%endif
 
 %description
 Percona Telemetry Agent gathers information and metrics from Percona products installed on the host.
