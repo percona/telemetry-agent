@@ -37,6 +37,7 @@ linters:
     - interfacebloat   # controversy to codebase
     - funlen           # some logic is really long
     - tagalign         # controversy to codebase
+    - mnd              # too annoying
 
 issues:
   exclude-use-default: false
