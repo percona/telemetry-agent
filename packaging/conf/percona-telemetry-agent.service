@@ -8,7 +8,7 @@ Type=simple
 User=daemon
 Group=percona-telemetry
 PermissionsStartOnly=true
-ExecStart=/bin/sh -c '/usr/bin/percona-telemetry-agent > /var/log/percona/telemetry-agent.log 2> /var/log/percona/telemetry-agent-error.log'
+ExecStart=/bin/sh -c '/usr/bin/percona-telemetry-agent >> /var/log/percona/telemetry-agent.log 2>> /var/log/percona/telemetry-agent-error.log'
 Restart=always
 
 [Install]
