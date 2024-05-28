@@ -29,22 +29,26 @@ func queryRhelPackage(ctx context.Context, localOS, packageNamePattern string) (
 
 func getRhelPackageManagerCmd(localOS string) ([]string, error) {
 	const newQueryFormat = "'%{name}|%{version}|%{release}|%{from_repo}'"
-	const oldQueryFormat = "'%{name}|%{version}|%{release}|%{ui_from_repo}'"
+	newPkgMngCmds := [][]string{
+		{"repoquery", "--qf", newQueryFormat, "--installed"},
+		{"yum", "repoquery", "--qf", newQueryFormat, "--installed"},
+		{"dnf", "repoquery", "--qf", newQueryFormat, "--installed"},
+	}
+	oldPkgMngCmds := [][]string{
+		{"repoquery", "--qf", "'%{name}|%{version}|%{release}|%{ui_from_repo}'", "--installed"},
+	}
 	var pkgMngCmds [][]string
 
-	localOSLower := strings.ToLower(localOS)
-	switch {
-	// CentOS 7 and Amazon Linux 2 has old 'repoquery' tool version and requires old query format.
-	case strings.HasPrefix(localOSLower, "centos"), strings.HasPrefix(localOSLower, "amazon linux 2"):
-		pkgMngCmds = [][]string{
-			{"repoquery", "--qf", oldQueryFormat, "--installed"},
-		}
+	switch localOSLower := strings.ToLower(localOS); {
+	case strings.HasPrefix(localOSLower, "centos stream"):
+		// Centos Stream has new 'repoquery' tool version and requires new query format.
+		pkgMngCmds = newPkgMngCmds
+	case strings.HasPrefix(localOSLower, "centos"),
+		strings.HasPrefix(localOSLower, "amazon linux 2"):
+		// CentOS 7 and Amazon Linux 2 has old 'repoquery' tool version and requires old query format.
+		pkgMngCmds = oldPkgMngCmds
 	default:
-		pkgMngCmds = [][]string{
-			{"repoquery", "--qf", newQueryFormat, "--installed"},
-			{"yum", "repoquery", "--qf", newQueryFormat, "--installed"},
-			{"dnf", "repoquery", "--qf", newQueryFormat, "--installed"},
-		}
+		pkgMngCmds = newPkgMngCmds
 	}
 	for _, pkgMngCmd := range pkgMngCmds {
 		if _, err := exec.LookPath(pkgMngCmd[0]); err == nil {
@@ -150,6 +154,10 @@ func parseRhelPackageRegistry(packageRepository string, isPerconaPackage bool) P
 	if pos := strings.LastIndex(packageRepository, "-"); pos != -1 {
 		packageRepository = packageRepository[0:pos]
 	}
+
+	// On some OSes (Centos 7, Amazon Linux 2) repository name may start from '@',
+	// need to remove it.
+	packageRepository = strings.TrimPrefix(packageRepository, "@")
 
 	// Percona repository name has format:
 	// <name>-<component>

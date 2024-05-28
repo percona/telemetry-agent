@@ -166,6 +166,33 @@ percona-backup-mongodb|2.4.1.el9||pbm-release-x86_64
 			expectErr: nil,
 		},
 		{
+			name:             "pattern_percona_full_output_centos7_al2",
+			isPerconaPackage: isPerconaPackage("percona-*"),
+			packageOutput: []byte(`percona-server-server|8.0.36|28.1.el9|@ps-80-release-x86_64
+percona-mysql-shell|8.0.36|1.el9|@ps-80-release-x86_64
+`),
+			packageErr: nil,
+			expectedPackageList: []*Package{
+				{
+					Name:    "percona-server-server",
+					Version: "8.0.36-28-1",
+					Repository: PackageRepository{
+						Name:      "ps-80",
+						Component: "release",
+					},
+				},
+				{
+					Name:    "percona-mysql-shell",
+					Version: "8.0.36-1",
+					Repository: PackageRepository{
+						Name:      "ps-80",
+						Component: "release",
+					},
+				},
+			},
+			expectErr: nil,
+		},
+		{
 			name:             "pattern_percona_proxysql_installed",
 			isPerconaPackage: isPerconaPackage("proxysql*"),
 			packageOutput: []byte(`proxysql|1.5.5|1.2.el9|proxysql-release-x86_64
