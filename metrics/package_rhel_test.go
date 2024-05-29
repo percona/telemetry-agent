@@ -18,7 +18,7 @@ func TestIsRHELFamily(t *testing.T) {
 	}
 }
 
-func TestParseRhelPackageOutput(t *testing.T) {
+func TestParseRhelPackageOutput(t *testing.T) { //nolint:maintidx
 	t.Parallel()
 	rpmError := errors.New("rpm: --test may only be specified during package installation and erasure")
 
@@ -170,6 +170,8 @@ percona-backup-mongodb|2.4.1.el9||pbm-release-x86_64
 			isPerconaPackage: isPerconaPackage("percona-*"),
 			packageOutput: []byte(`percona-server-server|8.0.36|28.1.el9|@ps-80-release-x86_64
 percona-mysql-shell|8.0.36|1.el9|@ps-80-release-x86_64
+proxysql2|2.5.5|1.2.el7|@/proxysql2-2.5.5-1.2.el7.x86_64
+proxysql2|2.5.5|1.2.el9|@commandline
 `),
 			packageErr: nil,
 			expectedPackageList: []*Package{
@@ -187,6 +189,22 @@ percona-mysql-shell|8.0.36|1.el9|@ps-80-release-x86_64
 					Repository: PackageRepository{
 						Name:      "ps-80",
 						Component: "release",
+					},
+				},
+				{
+					Name:    "proxysql2",
+					Version: "2.5.5-1-2",
+					Repository: PackageRepository{
+						Name:      "",
+						Component: "",
+					},
+				},
+				{
+					Name:    "proxysql2",
+					Version: "2.5.5-1-2",
+					Repository: PackageRepository{
+						Name:      "",
+						Component: "",
 					},
 				},
 			},
