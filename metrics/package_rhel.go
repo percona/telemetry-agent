@@ -155,6 +155,12 @@ func parseRhelPackageRegistry(packageRepository string, isPerconaPackage bool) P
 		packageRepository = packageRepository[0:pos]
 	}
 
+	if strings.HasPrefix(packageRepository, "@/") {
+		// On CentOS 7 registry into starts from '@/' symbols that means that
+		// package was installed manually from rpm but not from registry.
+		// Need to return empty registry info in this case.
+		return toReturn
+	}
 	// On some OSes (Centos 7, Amazon Linux 2) repository name may start from '@',
 	// need to remove it.
 	packageRepository = strings.TrimPrefix(packageRepository, "@")
