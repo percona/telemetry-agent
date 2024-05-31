@@ -44,9 +44,12 @@ var (
 
 // TelemetryOpts represents the options for configuring telemetry paths on local filesystem.
 type TelemetryOpts struct {
-	RootPath            string `help:"define Percona telemetry root path on local filesystem." env:"PERCONA_TELEMETRY_ROOT_PATH" default:"/usr/local/percona/telemetry"`
-	PSMetricsPath       string `kong:"-"`
-	PSMDBMetricsPath    string `kong:"-"`
+	RootPath      string `help:"define Percona telemetry root path on local filesystem." env:"PERCONA_TELEMETRY_ROOT_PATH" default:"/usr/local/percona/telemetry"`
+	PSMetricsPath string `kong:"-"`
+	// For PSMDB (mongod) component
+	PSMDBMetricsPath string `kong:"-"`
+	// For PSMDB (mongos) component
+	PSMDBSMetricsPath   string `kong:"-"`
 	PXCMetricsPath      string `kong:"-"`
 	PGMetricsPath       string `kong:"-"`
 	HistoryPath         string `kong:"-"`
@@ -109,6 +112,7 @@ func InitConfig() Config {
 
 	conf.Telemetry.PSMetricsPath = filepath.Join(conf.Telemetry.RootPath, "ps")
 	conf.Telemetry.PSMDBMetricsPath = filepath.Join(conf.Telemetry.RootPath, "psmdb")
+	conf.Telemetry.PSMDBSMetricsPath = filepath.Join(conf.Telemetry.RootPath, "psmdbs")
 	conf.Telemetry.PXCMetricsPath = filepath.Join(conf.Telemetry.RootPath, "pxc")
 	conf.Telemetry.PGMetricsPath = filepath.Join(conf.Telemetry.RootPath, "pg")
 	conf.Telemetry.HistoryPath = filepath.Join(conf.Telemetry.RootPath, "history")

@@ -103,9 +103,16 @@ func processPillarsMetrics(c config.Config) []*metrics.File {
 		pillarMetrics = append(pillarMetrics, pMetrics...)
 	}
 
-	l.Infow("processing PSMDB metrics", zap.String("directory", c.Telemetry.PSMDBMetricsPath))
+	l.Infow("processing PSMDB (mongod) metrics", zap.String("directory", c.Telemetry.PSMDBMetricsPath))
 	if pMetrics, err := metrics.ProcessPSMDBMetrics(c.Telemetry.PSMDBMetricsPath); err != nil {
-		l.Warnw("failed to process PSMDB metrics", zap.Error(err))
+		l.Warnw("failed to process PSMDB (mongod) metrics", zap.Error(err))
+	} else {
+		pillarMetrics = append(pillarMetrics, pMetrics...)
+	}
+
+	l.Infow("processing PSMDB (mongos) metrics", zap.String("directory", c.Telemetry.PSMDBSMetricsPath))
+	if pMetrics, err := metrics.ProcessPSMDBMetrics(c.Telemetry.PSMDBSMetricsPath); err != nil {
+		l.Warnw("failed to process PSMDB (mongos) metrics", zap.Error(err))
 	} else {
 		pillarMetrics = append(pillarMetrics, pMetrics...)
 	}
