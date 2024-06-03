@@ -39,6 +39,8 @@ const (
 	deploymentPackage = "PACKAGE"
 	deploymentDocker  = "DOCKER"
 	perconaDockerEnv  = "FULL_PERCONA_VERSION"
+	// Percona env variable that contains OS name in docker container.
+	dockerOSEnv = "OS_VER"
 )
 
 // NOTE: the logic in this file is designed in a way "do our best to provide value", i.e. in case an error appears
@@ -180,6 +182,11 @@ func getDeploymentInfo() string {
 }
 
 func getOSInfo() string {
+	if getDeploymentInfo() == deploymentDocker {
+		if val, found := os.LookupEnv(dockerOSEnv); found {
+			return val
+		}
+	}
 	filePath := filepath.Join("/etc", "os-release")
 	if _, err := os.Stat(filePath); err == nil {
 		zap.L().Sugar().Debugw("getting OS info from file", zap.String("file", filePath))
