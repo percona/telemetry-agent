@@ -44,14 +44,17 @@ var (
 
 // TelemetryOpts represents the options for configuring telemetry paths on local filesystem.
 type TelemetryOpts struct {
-	RootPath            string `help:"define Percona telemetry root path on local filesystem." env:"PERCONA_TELEMETRY_ROOT_PATH" default:"/usr/local/percona/telemetry"`
-	PSMetricsPath       string `kong:"-"`
-	PSMDBMetricsPath    string `kong:"-"`
-	PXCMetricsPath      string `kong:"-"`
-	PGMetricsPath       string `kong:"-"`
-	HistoryPath         string `kong:"-"`
-	CheckInterval       int    `help:"define time interval in seconds for checking Percona Pillars telemetry." env:"PERCONA_TELEMETRY_CHECK_INTERVAL" default:"86400"`
-	HistoryKeepInterval int    `help:"define time interval in seconds for keeping old history telemetry files on filesystem." env:"PERCONA_TELEMETRY_HISTORY_KEEP_INTERVAL" default:"604800"`
+	RootPath      string `help:"define Percona telemetry root path on local filesystem." env:"PERCONA_TELEMETRY_ROOT_PATH" default:"/usr/local/percona/telemetry"`
+	PSMetricsPath string `kong:"-"`
+	// For PSMDB (mongod) component
+	PSMDBMongodMetricsPath string `kong:"-"`
+	// For PSMDB (mongos) component
+	PSMDBMongosMetricsPath string `kong:"-"`
+	PXCMetricsPath         string `kong:"-"`
+	PGMetricsPath          string `kong:"-"`
+	HistoryPath            string `kong:"-"`
+	CheckInterval          int    `help:"define time interval in seconds for checking Percona Pillars telemetry." env:"PERCONA_TELEMETRY_CHECK_INTERVAL" default:"86400"`
+	HistoryKeepInterval    int    `help:"define time interval in seconds for keeping old history telemetry files on filesystem." env:"PERCONA_TELEMETRY_HISTORY_KEEP_INTERVAL" default:"604800"`
 }
 
 // PlatformOpts represents the options for configuring communication with Percona Platform parameters.
@@ -108,7 +111,8 @@ func InitConfig() Config {
 	}
 
 	conf.Telemetry.PSMetricsPath = filepath.Join(conf.Telemetry.RootPath, "ps")
-	conf.Telemetry.PSMDBMetricsPath = filepath.Join(conf.Telemetry.RootPath, "psmdb")
+	conf.Telemetry.PSMDBMongodMetricsPath = filepath.Join(conf.Telemetry.RootPath, "psmdb")
+	conf.Telemetry.PSMDBMongosMetricsPath = filepath.Join(conf.Telemetry.RootPath, "psmdbs")
 	conf.Telemetry.PXCMetricsPath = filepath.Join(conf.Telemetry.RootPath, "pxc")
 	conf.Telemetry.PGMetricsPath = filepath.Join(conf.Telemetry.RootPath, "pg")
 	conf.Telemetry.HistoryPath = filepath.Join(conf.Telemetry.RootPath, "history")
