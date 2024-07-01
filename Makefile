@@ -3,7 +3,7 @@ default: help
 
 GOPRIVATE=github.com/percona,github.com/percona-platform
 GONOSUMDB=github.com/percona,github.com/percona-platform
-COMPONENT_VERSION ?= $(shell git describe --abbrev=0 --always)
+COMPONENT_VERSION ?= $(shell git describe --abbrev=0 --always --tags)
 BUILD ?= $(shell date +%FT%T%z)
 TELEMETRY_AGENT_RELEASE_FULLCOMMIT ?= $(shell git rev-parse HEAD)
 GO_BUILD_LDFLAGS = -X github.com/percona/telemetry-agent/config.Version=${COMPONENT_VERSION} \
