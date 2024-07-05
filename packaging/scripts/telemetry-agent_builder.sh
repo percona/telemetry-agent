@@ -139,11 +139,16 @@ get_system() {
 }
 
 install_golang() {
-    wget https://golang.org/dl/go1.21.1.linux-amd64.tar.gz -O /tmp/golang1.21.1.tar.gz
-    tar --transform=s,go,go1.21.1, -zxf /tmp/golang1.21.1.tar.gz
+    if [ x"$ARCH" = "xx86_64" ]; then
+      GO_ARCH="amd64"
+    elif [ x"$ARCH" = "xaarch64" ]; then
+      GO_ARCH="arm64"
+    fi
+    wget https://golang.org/dl/go1.22.5.linux-${GO_ARCH}.tar.gz -O /tmp/golang1.22.5.tar.gz
+    tar --transform=s,go,go1.22.5, -zxf /tmp/golang1.22.5.tar.gz
     rm -rf /usr/local/go*
-    mv go1.21.1 /usr/local/
-    ln -s /usr/local/go1.21.1 /usr/local/go
+    mv go1.22.5 /usr/local/
+    ln -s /usr/local/go1.22.5 /usr/local/go
 }
 
 install_deps() {

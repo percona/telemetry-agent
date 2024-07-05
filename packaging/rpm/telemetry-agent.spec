@@ -39,10 +39,15 @@ export GOROOT="/usr/local/go/"
 export GOPATH=$(pwd)/
 export PATH="/usr/local/go/bin:$PATH:$GOPATH"
 export GOBINPATH="/usr/local/go/bin"
+%ifarch aarch64
+export GOARCH=arm64
+%else
+export GOARCH=amd64
+%endif
 mkdir -p src/github.com/percona/
 mv percona-telemetry-agent-%{version} src/github.com/percona/percona-telemetry-agent
 ln -s src/github.com/percona/percona-telemetry-agent percona-telemetry-agent-%{version}
-cd src/github.com/percona/percona-telemetry-agent && make build
+cd src/github.com/percona/percona-telemetry-agent && env GOARCH=${GOARCH} make build
 cd %{_builddir}
 
 %install
