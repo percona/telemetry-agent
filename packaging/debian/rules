@@ -33,7 +33,11 @@ override_dh_auto_build:
 	export GOBINPATH="/usr/local/go/bin"
 	mkdir -p build/src/github.com/percona/percona-telemetry-agent
 	cp -r `ls | grep -v build` build/src/github.com/percona/percona-telemetry-agent/
-	cd build/src/github.com/percona/percona-telemetry-agent/ && make build
+ifeq ($(DEB_BUILD_ARCH),arm64)
+	cd build/src/github.com/percona/percona-telemetry-agent/ && env GOARCH=arm64 make build
+else
+	cd build/src/github.com/percona/percona-telemetry-agent/ && env GOARCH=amd64 make build
+endif
 	touch $@
 
 override_dh_auto_install:
