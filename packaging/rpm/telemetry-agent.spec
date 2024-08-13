@@ -1,5 +1,5 @@
 %global debug_package %{nil}
-%define _log_dir /var/log/percona
+%define _log_dir /var/log/percona/telemetry-agent
 
 Name:  percona-telemetry-agent
 Version: @@VERSION@@
@@ -52,7 +52,6 @@ cd %{_builddir}
 
 %install
 rm -rf $RPM_BUILD_ROOT
-mkdir -p $RPM_BUILD_ROOT/%{_log_dir}
 install -m 755 -d $RPM_BUILD_ROOT/%{_bindir}
 cd ../
 export PATH=/usr/local/go/bin:${PATH}
@@ -88,7 +87,9 @@ chown daemon:percona-telemetry /usr/local/percona/telemetry/history
 chmod g+s /usr/local/percona/telemetry/history
 chmod u+s /usr/local/percona/telemetry/history
 chown daemon:percona-telemetry /usr/local/percona/telemetry
-chmod -R go+w %{_log_dir}
+mkdir -p %{_log_dir}
+chown daemon:percona-telemetry %{_log_dir}
+chmod 775 %{_log_dir}
 # Fix permissions to be able to create Percona telemetry uuid file
 chgrp percona-telemetry /usr/local/percona
 chmod 775 /usr/local/percona

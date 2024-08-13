@@ -1,4 +1,5 @@
-/var/log/percona/telemetry-agent*.log {
+/var/log/percona/telemetry-agent/telemetry-agent*.log {
+    su daemon percona-telemetry
     # Rotate log weekly
     weekly
     # Keep 4 rotated logs
