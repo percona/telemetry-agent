@@ -44,7 +44,6 @@ override_dh_auto_install:
 	@echo "RULES.$@"
 	mkdir -p $(TMP)
 	mkdir -p $(TMP)/default
-	mkdir -p /var/log/percona
 	cd build/src/github.com/percona/percona-telemetry-agent/bin && cp telemetry-agent $(TMP)/percona-telemetry-agent
 	cp -f packaging/conf/percona-telemetry-agent.env  $(TMP)/default/percona-telemetry-agent
 	cp -f packaging/conf/percona-telemetry-agent.service $(TMP)/percona-telemetry-agent.service

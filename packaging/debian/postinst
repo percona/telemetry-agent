@@ -1,8 +1,9 @@
 #!/bin/sh
 
 #DEBHELPER#
-mkdir -p /var/log/percona
-chmod -R go+w /var/log/percona
+mkdir -p /var/log/percona/telemetry-agent
+chown daemon:percona-telemetry /var/log/percona/telemetry-agent
+chmod 775 /var/log/percona/telemetry-agent
 systemctl daemon-reload
 systemctl enable percona-telemetry-agent.service || true
 systemctl start percona-telemetry-agent.service
