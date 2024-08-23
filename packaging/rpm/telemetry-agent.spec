@@ -3,7 +3,7 @@
 
 Name:  percona-telemetry-agent
 Version: @@VERSION@@
-Release: 1%{?dist}
+Release: @@RELEASE@@%{?dist}
 Summary: Percona Telemetry Agent
 Group:  Applications/Databases
 License: GPLv3
@@ -13,6 +13,7 @@ Source0: percona-telemetry-agent-%{version}.tar.gz
 BuildRequires: golang make git
 BuildRequires:  systemd
 BuildRequires:  pkgconfig(systemd)
+Requires:  logrotate
 Requires(post):   systemd
 Requires(preun):  systemd
 Requires(postun): systemd
@@ -53,6 +54,9 @@ cd %{_builddir}
 %install
 rm -rf $RPM_BUILD_ROOT
 install -m 755 -d $RPM_BUILD_ROOT/%{_bindir}
+install -m 0775 -d $RPM_BUILD_ROOT/%{_log_dir}
+install -D -m 0660 /dev/null $RPM_BUILD_ROOT/%{_log_dir}/telemetry-agent.log
+install -D -m 0660 /dev/null  $RPM_BUILD_ROOT/%{_log_dir}/telemetry-agent-error.log
 cd ../
 export PATH=/usr/local/go/bin:${PATH}
 export GOROOT="/usr/local/go/"
@@ -73,42 +77,59 @@ if [ ! -d /run/percona-telemetry-agent ]; then
     install -m 0755 -d -oroot -groot /run/percona-telemetry-agent
 fi
 # Create new linux group
-groupadd percona-telemetry
 # For telemetry-agent to be able to read/remove the metric files
-usermod -a -G percona-telemetry daemon
+/usr/bin/getent group percona-telemetry || groupadd percona-telemetry >/dev/null 2>&1 || :
+usermod -a -G percona-telemetry daemon >/dev/null 2>&1 || :
 
 %post -n percona-telemetry-agent
-%systemd_post percona-telemetry-agent.service
-/usr/bin/systemctl enable percona-telemetry-agent >/dev/null 2>&1 || :
-/usr/bin/systemctl start percona-telemetry-agent
+chown -R daemon:percona-telemetry %{_log_dir} >/dev/null 2>&1 || :
+chmod g+w %{_log_dir}
+# Move the old logfiles, if present during update
+if [[ -e /var/log/percona/telemetry-agent*.log* ]]; then
+    chmod 0775  %{_log_dir}
+    mv /var/log/percona/telemetry-agent*log* /var/log/percona/telemetry-agent/ >/dev/null 2>&1 || :
+    chmod 0660  %{_log_dir}/telemetry-agent*log*
+fi
 # Create telemetry history directory
 mkdir -p /usr/local/percona/telemetry/history
 chown daemon:percona-telemetry /usr/local/percona/telemetry/history
 chmod g+s /usr/local/percona/telemetry/history
 chmod u+s /usr/local/percona/telemetry/history
 chown daemon:percona-telemetry /usr/local/percona/telemetry
-mkdir -p %{_log_dir}
-chown daemon:percona-telemetry %{_log_dir}
-chmod 775 %{_log_dir}
 # Fix permissions to be able to create Percona telemetry uuid file
 chgrp percona-telemetry /usr/local/percona
 chmod 775 /usr/local/percona
+%systemd_post percona-telemetry-agent.service
+if [ $1 == 1 ]; then
+      /usr/bin/systemctl enable percona-telemetry-agent >/dev/null 2>&1 || :
+fi
 
 %preun -n percona-telemetry-agent
-/usr/bin/systemctl stop percona-telemetry-agent || true
 %systemd_preun percona-telemetry-agent.service
 
 %postun -n percona-telemetry-agent
 %systemd_postun_with_restart percona-telemetry-agent.service
-systemctl daemon-reload
-/usr/sbin/groupdel percona-telemetry > /dev/null 2>&1 || true
+if [ $1 == 0 ]; then
+    groupdel percona-telemetry >/dev/null 2>&1 || :
+fi
+
+%posttrans -n percona-telemetry-agent
+# Package update - add the group that was deleted, reload and restart the service
+if [ $1 -ge 1 ]; then
+    /usr/bin/getent group percona-telemetry || groupadd percona-telemetry >/dev/null 2>&1 || :
+    usermod -a -G percona-telemetry daemon >/dev/null 2>&1 || :
+    systemctl daemon-reload >/dev/null 2>&1 || true
+    /usr/bin/systemctl enable percona-telemetry-agent.service >/dev/null 2>&1 || :
+    /usr/bin/systemctl start percona-telemetry-agent.service >/dev/null 2>&1 || :
+fi
 
 %files -n percona-telemetry-agent
 %{_bindir}/percona-telemetry-agent
-%dir %attr(0755,root,root) %{_log_dir}
 %config(noreplace) %attr(0640,root,root) /%{_sysconfdir}/sysconfig/percona-telemetry-agent
 %config(noreplace) %attr(0644,root,root) /%{_sysconfdir}/logrotate.d/percona-telemetry-agent
 %{_unitdir}/percona-telemetry-agent.service
+%{_log_dir}/telemetry-agent.log
+%{_log_dir}/telemetry-agent-error.log
 
 %changelog
 * Wed Apr 03 2024 Surabhi Bhat <surabhi.bhat@percona.com>
