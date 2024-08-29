@@ -25,7 +25,9 @@ chmod 775 /usr/local/percona
 
 
 systemctl daemon-reload
-systemctl enable percona-telemetry-agent.service > /dev/null 2>&1 || :
-systemctl start percona-telemetry-agent.service > /dev/null 2>&1 || :
+if systemctl is-enabled --quiet percona-telemetry-agent.service; then
+    systemctl enable percona-telemetry-agent.service > /dev/null 2>&1 || :
+    systemctl start percona-telemetry-agent.service > /dev/null 2>&1 || :
+fi
 
 exit 0

@@ -108,8 +108,9 @@ fi
 %systemd_preun percona-telemetry-agent.service
 
 %postun -n percona-telemetry-agent
-%systemd_postun_with_restart percona-telemetry-agent.service
 if [ $1 == 0 ]; then
+    %systemd_postun_with_restart percona-telemetry-agent.service
+    systemctl daemon-reload
     groupdel percona-telemetry >/dev/null 2>&1 || :
 fi
 
@@ -119,8 +120,10 @@ if [ $1 -ge 1 ]; then
     /usr/bin/getent group percona-telemetry || groupadd percona-telemetry >/dev/null 2>&1 || :
     usermod -a -G percona-telemetry daemon >/dev/null 2>&1 || :
     systemctl daemon-reload >/dev/null 2>&1 || true
-    /usr/bin/systemctl enable percona-telemetry-agent.service >/dev/null 2>&1 || :
-    /usr/bin/systemctl start percona-telemetry-agent.service >/dev/null 2>&1 || :
+    if systemctl is-enabled percona-telemetry-agent.service > /dev/null 2>&1; then
+        /usr/bin/systemctl enable percona-telemetry-agent.service >/dev/null 2>&1 || :
+        /usr/bin/systemctl start percona-telemetry-agent.service >/dev/null 2>&1 || :
+    fi
 fi
 
 %files -n percona-telemetry-agent
