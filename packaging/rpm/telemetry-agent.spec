@@ -3,7 +3,7 @@
 
 Name:  percona-telemetry-agent
 Version: @@VERSION@@
-Release: 1%{?dist}
+Release: 2%{?dist}
 Summary: Percona Telemetry Agent
 Group:  Applications/Databases
 License: GPLv3
