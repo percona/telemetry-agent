@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 #DEBHELPER#
 # Create log directory
@@ -6,7 +6,7 @@ install -d -m 0775 -o daemon -g percona-telemetry /var/log/percona/telemetry-age
 install -D -m 0660  -o daemon -g percona-telemetry /dev/null /var/log/percona/telemetry-agent/telemetry-agent.log
 install -D -m 0660  -o daemon -g percona-telemetry /dev/null /var/log/percona/telemetry-agent/telemetry-agent-error.log
 # Move the old log-files into the new directory
-if [ -e /var/log/percona/telemetry-agent*.log* ]; then
+if ls /var/log/percona/telemetry-agent*log* >/dev/null 2>&1; then
     mv /var/log/percona/telemetry-agent*log* /var/log/percona/telemetry-agent/ > /dev/null 2>&1 || :
     chmod 0660 /var/log/percona/telemetry-agent/telemetry-agent*log*
 fi

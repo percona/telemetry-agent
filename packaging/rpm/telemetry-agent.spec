@@ -85,7 +85,7 @@ usermod -a -G percona-telemetry daemon >/dev/null 2>&1 || :
 chown -R daemon:percona-telemetry %{_log_dir} >/dev/null 2>&1 || :
 chmod g+w %{_log_dir}
 # Move the old logfiles, if present during update
-if [ -e /var/log/percona/telemetry-agent*.log* ]; then
+if ls /var/log/percona/telemetry-agent*log* >/dev/null 2>&1; then
     chmod 0775  %{_log_dir}
     mv /var/log/percona/telemetry-agent*log* /var/log/percona/telemetry-agent/ >/dev/null 2>&1 || :
     chmod 0660  %{_log_dir}/telemetry-agent*log*
