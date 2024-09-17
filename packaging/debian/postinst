@@ -23,11 +23,24 @@ chown daemon:percona-telemetry /usr/local/percona/telemetry
 chgrp percona-telemetry /usr/local/percona
 chmod 775 /usr/local/percona
 
+case "$1" in
+        configure)
 
-systemctl daemon-reload
-if systemctl is-enabled --quiet percona-telemetry-agent.service; then
-    systemctl enable percona-telemetry-agent.service > /dev/null 2>&1 || :
-    systemctl start percona-telemetry-agent.service > /dev/null 2>&1 || :
-fi
+        if [ -z "$2" ];
+	then
+		systemctl daemon-reload
+		systemctl enable percona-telemetry-agent.service > /dev/null 2>&1 || :
+		systemctl start percona-telemetry-agent.service > /dev/null 2>&1 || :
+	else
+		systemctl daemon-reload
+		if systemctl is-enabled --quiet percona-telemetry-agent.service; then
+			systemctl enable percona-telemetry-agent.service > /dev/null 2>&1 || :
+			systemctl start percona-telemetry-agent.service > /dev/null 2>&1 || :
+		fi
+	fi
+	;;
+	*)
+	;;
+esac
 
 exit 0
