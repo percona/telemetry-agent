@@ -4,7 +4,7 @@ go 1.22.7
 
 require (
 	github.com/alecthomas/kong v0.9.0
-	github.com/go-resty/resty/v2 v2.14.0
+	github.com/go-resty/resty/v2 v2.15.2
 	github.com/google/uuid v1.6.0
 	github.com/knqyf263/go-deb-version v0.0.0-20230223133812-3ed183d23422
 	github.com/percona-platform/saas v0.0.0-20240311135437-dec101d42466
