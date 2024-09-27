@@ -121,8 +121,8 @@ if [ $1 -ge 1 ]; then
     usermod -a -G percona-telemetry daemon >/dev/null 2>&1 || :
     systemctl daemon-reload >/dev/null 2>&1 || true
     if systemctl is-enabled percona-telemetry-agent.service > /dev/null 2>&1; then
-        /usr/bin/systemctl enable percona-telemetry-agent.service >/dev/null 2>&1 || :
-        /usr/bin/systemctl start percona-telemetry-agent.service >/dev/null 2>&1 || :
+        #/usr/bin/systemctl enable percona-telemetry-agent.service >/dev/null 2>&1 || :
+        /usr/bin/systemctl restart percona-telemetry-agent.service >/dev/null 2>&1 || :
     fi
 fi
 
