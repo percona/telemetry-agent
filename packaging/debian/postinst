@@ -1,12 +1,15 @@
 #!/bin/sh
 
 #DEBHELPER#
-mkdir -p /var/log/percona/telemetry-agent
-chown daemon:percona-telemetry /var/log/percona/telemetry-agent
-chmod 775 /var/log/percona/telemetry-agent
-systemctl daemon-reload
-systemctl enable percona-telemetry-agent.service || true
-systemctl start percona-telemetry-agent.service
+# Create log directory
+install -d -m 0775 -o daemon -g percona-telemetry /var/log/percona/telemetry-agent
+install -D -m 0660  -o daemon -g percona-telemetry /dev/null /var/log/percona/telemetry-agent/telemetry-agent.log
+install -D -m 0660  -o daemon -g percona-telemetry /dev/null /var/log/percona/telemetry-agent/telemetry-agent-error.log
+# Move the old log-files into the new directory
+if [[ -e /var/log/percona/telemetry-agent*.log* ]]; then
+    mv /var/log/percona/telemetry-agent*log* /var/log/percona/telemetry-agent/ > /dev/null 2>&1 || :
+    chmod 0660 /var/log/percona/telemetry-agent/telemetry-agent*log*
+fi
 
 # Create telemetry history directory
 mkdir -p /usr/local/percona/telemetry/history
@@ -19,5 +22,10 @@ chown daemon:percona-telemetry /usr/local/percona/telemetry
 # Fix permissions to be able to create Percona telemetry uuid file
 chgrp percona-telemetry /usr/local/percona
 chmod 775 /usr/local/percona
+
+
+systemctl daemon-reload
+systemctl enable percona-telemetry-agent.service > /dev/null 2>&1 || :
+systemctl start percona-telemetry-agent.service > /dev/null 2>&1 || :
 
 exit 0

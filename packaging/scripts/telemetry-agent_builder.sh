@@ -49,6 +49,7 @@ parse_arguments() {
         --repo=*) REPO="$val" ;;
         --version=*) VERSION="$val" ;;
         --install_deps=*) INSTALL="$val" ;;
+        --release=*) RELEASE="$val" ;;
         --help) usage ;;
         *)
             if test -n "$pick_args"; then
@@ -407,12 +408,10 @@ OS_NAME=
 ARCH=
 OS=
 INSTALL=0
-RPM_RELEASE=1
-DEB_RELEASE=1
 VERSION="0.1"
 RELEASE="1"
 REVISION=0
-BRANCH="nocoord"
+BRANCH="phase-0"
 REPO="https://github.com/percona/telemetry-agent.git"
 PRODUCT=percona-telemetry-agent
 parse_arguments PICK-ARGS-FROM-ARGV "$@"
