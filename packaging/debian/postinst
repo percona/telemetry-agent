@@ -28,11 +28,11 @@ case "$1" in
 
         if [ -z "$2" ];
 	then
-		systemctl daemon-reload
+		systemctl daemon-reload > /dev/null 2>&1 || :
 		systemctl enable percona-telemetry-agent.service > /dev/null 2>&1 || :
 		systemctl start percona-telemetry-agent.service > /dev/null 2>&1 || :
 	else
-		systemctl daemon-reload
+		systemctl daemon-reload > /dev/null 2>&1 || :
 		if systemctl is-enabled --quiet percona-telemetry-agent.service; then
 			systemctl enable percona-telemetry-agent.service > /dev/null 2>&1 || :
 			systemctl start percona-telemetry-agent.service > /dev/null 2>&1 || :
@@ -42,5 +42,4 @@ case "$1" in
 	*)
 	;;
 esac
-
 exit 0
