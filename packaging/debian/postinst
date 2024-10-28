@@ -24,7 +24,7 @@ chgrp percona-telemetry /usr/local/percona
 chmod 775 /usr/local/percona
 
 
-systemctl daemon-reload
+systemctl daemon-reload > /dev/null 2>&1 || :
 if systemctl is-enabled --quiet percona-telemetry-agent.service; then
     systemctl enable percona-telemetry-agent.service > /dev/null 2>&1 || :
     systemctl start percona-telemetry-agent.service > /dev/null 2>&1 || :
