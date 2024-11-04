@@ -3,7 +3,7 @@ module github.com/percona/telemetry-agent
 go 1.22.7
 
 require (
-	github.com/alecthomas/kong v1.2.1
+	github.com/alecthomas/kong v1.3.0
 	github.com/go-resty/resty/v2 v2.15.3
 	github.com/google/uuid v1.6.0
 	github.com/knqyf263/go-deb-version v0.0.0-20230223133812-3ed183d23422
