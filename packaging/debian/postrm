@@ -8,7 +8,9 @@ fi
 
 case "$1" in
 	remove)
-	systemctl daemon-reload
+	if [ -x "/bin/systemctl" ]; then
+		systemctl daemon-reload > /dev/null 2>&1 || :
+	fi
 	groupdel percona-telemetry || true
 	;;
 

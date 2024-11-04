@@ -96,7 +96,7 @@ get_sources() {
     if [ ! -z "$BRANCH" ]; then
         git reset --hard
         git clean -xdf
-        git checkout "$BRANCH"
+        git checkout origin/"$BRANCH"
     fi
     REVISION=$(git rev-parse --short HEAD)
     GITCOMMIT=$(git rev-parse HEAD 2>/dev/null)
@@ -145,11 +145,11 @@ install_golang() {
     elif [ x"$ARCH" = "xaarch64" ]; then
       GO_ARCH="arm64"
     fi
-    wget https://golang.org/dl/go1.22.5.linux-${GO_ARCH}.tar.gz -O /tmp/golang1.22.5.tar.gz
-    tar --transform=s,go,go1.22.5, -zxf /tmp/golang1.22.5.tar.gz
+    wget https://golang.org/dl/go1.22.7.linux-${GO_ARCH}.tar.gz -O /tmp/golang1.22.7.tar.gz
+    tar --transform=s,go,go1.22.7, -zxf /tmp/golang1.22.7.tar.gz
     rm -rf /usr/local/go*
-    mv go1.22.5 /usr/local/
-    ln -s /usr/local/go1.22.5 /usr/local/go
+    mv go1.22.7 /usr/local/
+    ln -s /usr/local/go1.22.7 /usr/local/go
 }
 
 install_deps() {
@@ -408,7 +408,7 @@ OS_NAME=
 ARCH=
 OS=
 INSTALL=0
-VERSION="0.1"
+VERSION="0.2"
 RELEASE="1"
 REVISION=0
 BRANCH="phase-0"
