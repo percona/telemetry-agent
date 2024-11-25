@@ -1,6 +1,6 @@
 module github.com/percona/telemetry-agent/tools
 
-go 1.22.7
+go 1.23
 
 require (
 	github.com/golangci/golangci-lint v1.58.2
