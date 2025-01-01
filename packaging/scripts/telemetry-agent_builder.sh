@@ -101,10 +101,14 @@ get_sources() {
     REVISION=$(git rev-parse --short HEAD)
     GITCOMMIT=$(git rev-parse HEAD 2>/dev/null)
     GITBRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+    COMPONENT_VERSION=$(git describe --abbrev=0 --always --tags)
+    TELEMETRY_AGENT_RELEASE_FULLCOMMIT=$(git rev-parse HEAD)
     echo "VERSION=${VERSION}" >VERSION
     echo "REVISION=${REVISION}" >>VERSION
     echo "GITCOMMIT=${GITCOMMIT}" >>VERSION
     echo "GITBRANCH=${GITBRANCH}" >>VERSION
+    echo "COMPONENT_VERSION=${COMPONENT_VERSION}" >>VERSION
+    echo "TELEMETRY_AGENT_RELEASE_FULLCOMMIT=${TELEMETRY_AGENT_RELEASE_FULLCOMMIT}" >>VERSION
     echo "REVISION=${REVISION}" >>${WORKDIR}/percona-telemetry-agent.properties
     rm -fr debian rpm
     echo "percona-telemetry-agent (${VERSION}) unstable; urgency=low" >> packaging/debian/changelog
