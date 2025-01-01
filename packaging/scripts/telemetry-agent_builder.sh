@@ -96,7 +96,7 @@ get_sources() {
     if [ ! -z "$BRANCH" ]; then
         git reset --hard
         git clean -xdf
-        git checkout origin/"$BRANCH"
+        git checkout "$BRANCH"
     fi
     REVISION=$(git rev-parse --short HEAD)
     GITCOMMIT=$(git rev-parse HEAD 2>/dev/null)
