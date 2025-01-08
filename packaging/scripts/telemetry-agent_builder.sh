@@ -131,10 +131,15 @@ get_sources() {
 
 get_system() {
     if [ -f /etc/redhat-release ]; then
-        RHEL=$(rpm --eval %rhel)
-        ARCH=$(echo $(uname -m) | sed -e 's:i686:i386:g')
-        OS_NAME="el$RHEL"
-        OS="rpm"
+        export RHEL=$(rpm --eval %rhel)
+        export OS_NAME="el$RHEL"
+        export OS="rpm"
+        export ARCH=$(echo $(uname -m) | sed -e 's:i686:i386:g')
+    elif [ -f /etc/amazon-linux-release ]; then
+        export RHEL=$(rpm --eval %amzn)
+        export OS_NAME="amzn$RHEL"
+        export OS="rpm"
+        export ARCH=$(echo $(uname -m) | sed -e 's:i686:i386:g')
     else
         ARCH=$(uname -m)
         OS_NAME="$(lsb_release -sc)"
@@ -168,9 +173,11 @@ install_deps() {
     CURPLACE=$(pwd)
 
     if [ "x$OS" = "xrpm" ]; then
-        RHEL=$(rpm --eval %rhel)
         yum clean all
-        yum -y install epel-release git wget
+        if [ "x${RHEL}" != "x2023" ]; then
+            yum -y install epel-release
+        fi
+        yum -y install git wget
         yum -y install rpm-build make rpmlint rpmdevtools golang
         install_golang
     else
@@ -286,7 +293,6 @@ build_rpm() {
     mkdir -vp rpmbuild/{SOURCES,SPECS,BUILD,SRPMS,RPMS}
     cp $SRC_RPM rpmbuild/SRPMS/
 
-    RHEL=$(rpm --eval %rhel)
     ARCH=$(echo $(uname -m) | sed -e 's:i686:i386:g')
 
     echo "RHEL=${RHEL}" >>percona-telemetry-agent.properties
