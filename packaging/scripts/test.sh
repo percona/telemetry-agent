@@ -14,7 +14,7 @@ remove_percona_telemetry() {
     echo "Checking if Percona telemetry agent is installed..."
 
     case "$OS" in
-        ol)
+        ol | amzn)
             # Oracle Linux
             if rpm -q percona-telemetry-agent; then
                 echo "Percona telemetry agent is installed. Removing..."
@@ -58,6 +58,15 @@ install_percona_telemetry() {
                 exit 1
             fi
             ;;
+        amzn)
+          # Amazon Linux
+          if [ "$VERSION_ID" == "2023" ]; then
+            yum install -y https://repo.percona.com/yum/percona-release-latest.noarch.rpm
+          else
+            echo "Unsupported Amazon Linux version"
+            exit 1
+          fi
+          ;;
         debian | ubuntu)
             if [ "$VERSION_ID" == "11" ] || [ "$VERSION_ID" == "12" ] || [ "$VERSION_ID" == "20" ] || [ "$VERSION_ID" == "22" ] || [ "$VERSION_ID" == "24" ]; then
                 apt-get update
@@ -89,7 +98,7 @@ install_percona_telemetry() {
 
     percona-release enable telemetry testing
 
-    if [ "$OS" == "ol" ]; then
+    if [ "$OS" == "ol" ] || [ "$OS" == "amzn" ]; then
         yum update -y percona-telemetry-agent
     else
         apt-get update
