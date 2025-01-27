@@ -1,5 +1,4 @@
 #!/bin/bash
-# Tests fresh installation of telemetry-agent from the testing repository.
 
 # Detect OS and version
 if [ -f /etc/os-release ]; then
@@ -222,6 +221,9 @@ test_percona_telemetry_update() {
     echo "telemetry-agent status after update was not $pre_update_status"
     exit 1
   fi
+
+  # clean up
+  remove_percona_telemetry
 }
 
 
