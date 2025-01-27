@@ -44,8 +44,7 @@ remove_percona_telemetry() {
     esac
 }
 
-install_percona_telemetry() {
-
+test_percona_telemetry_installation() {
     # Call remove function to clean the system before installation
     remove_percona_telemetry
 
@@ -87,7 +86,7 @@ install_percona_telemetry() {
 
     percona-release enable telemetry testing
 
-    if [ "$OS" == "ol" ]; then
+    if [ "$OS" == "ol" ] || [ "$OS" == "amzn" ]; then
         yum install -y percona-telemetry-agent
     else
         apt-get update
@@ -104,6 +103,9 @@ install_percona_telemetry() {
         echo "Warning: Service is disabled, but it should be enabled after installation."
         exit 1
     fi
+
+    # Clean up
+    remove_percona_telemetry
 }
 
 check_percona_telemetry_version() {
@@ -134,4 +136,4 @@ check_percona_telemetry_version() {
 }
 
 # Start installation process
-install_percona_telemetry
+test_percona_telemetry_installation
