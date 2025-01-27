@@ -161,5 +161,62 @@ test_percona_telemetry_installation() {
     remove_percona_telemetry
 }
 
-# Start installation process
+# tests that updating percona-telemetry-agent works.
+# it also accepts argument to determine if TA should be enabled or disabled before updating.
+test_percona_telemetry_update() {
+  remove_percona_telemetry
+
+  install_percona_release
+
+  # enable and install from the main repository so that we can update from that to the testing package.
+  percona-release enable telemetry
+  if [ "$OS" == "ol" ] || [ "$OS" == "amzn" ]; then
+    yum install -y percona-telemetry-agent
+  else
+    apt-get update
+    apt-get install -y percona-telemetry-agent
+  fi
+
+  check_percona_telemetry_version
+  check_telemetry_agent_logs
+
+  if [ "$1" == "disabled" ]; then
+    systemctl stop percona-telemetry-agent
+    systemctl disable percona-telemetry-agent
+  else
+    systemctl enable percona-telemetry-agent
+  fi
+
+  pre_update_status=""
+  systemctl is-enabled percona-telemetry-agent | grep -q "enabled"
+  if [ $? -eq 0 ]; then
+    pre_update_status="enabled"
+  else
+    pre_update_status="disabled"
+  fi
+  echo "telemetry-agent status before update is $pre_update_status"
+
+  # upgrade TA and recheck
+  percona-release enable telemetry testing
+  if [ "$OS" == "ol" ]; then
+      yum update -y percona-telemetry-agent
+  else
+      apt-get update
+      apt-get install --only-upgrade -y percona-telemetry-agent
+  fi
+
+  check_percona_telemetry_version
+  check_telemetry_agent_logs
+  systemctl is-enabled percona-telemetry-agent | grep -q $pre_update_status
+  if [ $? -eq 0 ]; then
+    echo "telemetry-agent status remained $pre_update_status after update"
+  else
+    echo "telemetry-agent status after update was not $pre_update_status"
+    exit 1
+  fi
+}
+
+
 test_percona_telemetry_installation
+test_percona_telemetry_update "enabled"
+test_percona_telemetry_update "disabled"
