@@ -1,4 +1,5 @@
 #!/bin/bash
+# Tests fresh installation of telemetry-agent from the testing repository.
 
 # Detect OS and version
 if [ -f /etc/os-release ]; then
@@ -84,7 +85,7 @@ install_percona_telemetry() {
             ;;
     esac
 
-    percona-release enable telemetry
+    percona-release enable telemetry testing
 
     if [ "$OS" == "ol" ]; then
         yum install -y percona-telemetry-agent
@@ -93,25 +94,43 @@ install_percona_telemetry() {
         apt-get install -y percona-telemetry-agent
     fi
 
-    systemctl stop percona-telemetry-agent
-    systemctl disable percona-telemetry-agent
+    # Check version info for the installed telemetry-agent
+    check_percona_telemetry_version
 
-    percona-release enable telemetry testing
-
-    if [ "$OS" == "ol" ] || [ "$OS" == "amzn" ]; then
-        yum update -y percona-telemetry-agent
-    else
-        apt-get update
-        apt-get install --only-upgrade -y percona-telemetry-agent
-    fi
-
-    systemctl is-enabled percona-telemetry-agent | grep -q "disabled"
+    systemctl is-enabled percona-telemetry-agent | grep -q "enabled"
     if [ $? -eq 0 ]; then
-        echo "Service is still disabled as expected."
+        echo "Service is enabled as expected."
     else
-        echo "Warning: Service is enabled, but it should be disabled."
+        echo "Warning: Service is disabled, but it should be enabled after installation."
         exit 1
     fi
+}
+
+check_percona_telemetry_version() {
+  output=$(percona-telemetry-agent --version)
+
+  version=$(echo "$output" | grep "Version:" | awk '{print $2}')
+  commit=$(echo "$output" | grep "Commit:" | awk '{print $2}')
+  build_date=$(echo "$output" | grep "Build date:" | awk '{print $3}')
+
+  if [ -z "$version" ]; then
+      echo "Error: Version information is empty"
+      exit 1
+  fi
+
+  if [ -z "$commit" ]; then
+      echo "Error: Commit information is empty"
+      exit 1
+  fi
+
+  if [ -z "$build_date" ]; then
+      echo "Error: Commit information is empty"
+      exit 1
+  fi
+
+  echo "Version: $version"
+  echo "Commit: $commit"
+  echo "Build date: $build_date"
 }
 
 # Start installation process
