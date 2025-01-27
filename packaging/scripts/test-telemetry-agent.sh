@@ -119,7 +119,7 @@ check_percona_telemetry_version() {
   fi
 
   if [ -z "$build_date" ]; then
-      echo "Error: Commit information is empty"
+      echo "Error: Build date information is empty"
       exit 1
   fi
 
@@ -149,11 +149,19 @@ test_percona_telemetry_installation() {
     # Check telemetry-agent logs
     check_telemetry_agent_logs
 
-    systemctl is-enabled percona-telemetry-agent | grep -q "enabled"
+    systemctl is-enabled percona-telemetry-agent
     if [ $? -eq 0 ]; then
         echo "Service is enabled as expected."
     else
-        echo "Warning: Service is disabled, but it should be enabled after installation."
+        echo "Warning: Service is disabled, but it should be enabled post installation."
+        exit 1
+    fi
+
+    systemctl is-active percona-telemetry-agent
+    if [ $? -eq 0 ]; then
+        echo "Service is running as expected."
+    else
+        echo "Warning: Service is inactive, but it should be active post installation."
         exit 1
     fi
 
@@ -198,7 +206,7 @@ test_percona_telemetry_update() {
 
   # upgrade TA and recheck
   percona-release enable telemetry testing
-  if [ "$OS" == "ol" ]; then
+  if [ "$OS" == "ol" ] || [ "$OS" == "amzn" ]; then
       yum update -y percona-telemetry-agent
   else
       apt-get update
