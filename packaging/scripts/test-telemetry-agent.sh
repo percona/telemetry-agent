@@ -37,7 +37,7 @@ remove_percona_telemetry() {
             fi
             ;;
         *)
-            echo "Unsupported OS"
+            echo "Unsupported OS: ${OS}"
             exit 1
             ;;
     esac
@@ -50,7 +50,7 @@ install_percona_release() {
               if [ "$VERSION_ID" == "8" ] || [ "$VERSION_ID" == "9" ]; then
                   yum install -y https://repo.percona.com/yum/percona-release-latest.noarch.rpm
               else
-                  echo "Unsupported Oracle Linux version"
+                  echo "Unsupported Oracle Linux version: ${VERSION_ID}"
                   exit 1
               fi
               ;;
@@ -59,7 +59,7 @@ install_percona_release() {
             if [ "$VERSION_ID" == "2023" ]; then
               yum install -y https://repo.percona.com/yum/percona-release-latest.noarch.rpm
             else
-              echo "Unsupported Amazon Linux version"
+              echo "Unsupported Amazon Linux version: ${VERSION_ID}"
               exit 1
             fi
             ;;
@@ -70,7 +70,7 @@ install_percona_release() {
                   wget https://repo.percona.com/apt/percona-release_latest.$(lsb_release -sc)_all.deb
                   dpkg -i percona-release_latest.$(lsb_release -sc)_all.deb
               else
-                  echo "Unsupported Debian/Ubuntu version"
+                  echo "Unsupported Debian/Ubuntu version: ${VERSION_ID}"
                   exit 1
               fi
               ;;
