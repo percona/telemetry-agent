@@ -193,7 +193,7 @@ test_percona_telemetry_update() {
   elif [ "$OS" == "amzn" ]; then
     # install from testing repo until we publish to main
     percona-release enable telemetry testing
-    yum -y install https://repo.percona.com/prel/yum/testing/2023/RPMS/noarch/percona-release-1.0-30.noarch.rpm
+    yum install -y percona-telemetry-agent
   else
     # enable and install from the main repository so that we can update from that to the testing package.
     percona-release enable telemetry
