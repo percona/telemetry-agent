@@ -10,6 +10,8 @@ else
     exit 1
 fi
 
+TARGET_TEST_VERSION="$1"
+
 remove_percona_telemetry() {
     echo "Checking if Percona telemetry agent is installed..."
 
@@ -57,7 +59,9 @@ install_percona_release() {
           amzn)
             # Amazon Linux
             if [ "$VERSION_ID" == "2" ] || [ "$VERSION_ID" == "2023" ]; then
-              yum install -y https://repo.percona.com/yum/percona-release-latest.noarch.rpm
+              # yum install -y https://repo.percona.com/yum/percona-release-latest.noarch.rpm
+              # todo: use percona-release from testing repositories until it's released
+              yum -y install https://repo.percona.com/prel/yum/testing/2023/RPMS/noarch/percona-release-1.0-30.noarch.rpm
             else
               echo "Unsupported Amazon Linux version: ${VERSION_ID}"
               exit 1
@@ -110,6 +114,13 @@ check_percona_telemetry_version() {
   if [ -z "$version" ]; then
       echo "Error: Version information is empty"
       exit 1
+  fi
+
+  if [ ! -z "$TARGET_TEST_VERSION" ]; then
+    if [ "$version" != "$TARGET_TEST_VERSION" ]; then
+      echo "Error: Build version ($version) does not match expected version ($TARGET_TEST_VERSION)"
+      exit 1
+    fi
   fi
 
   if [ -z "$commit" ]; then
@@ -175,11 +186,17 @@ test_percona_telemetry_update() {
 
   install_percona_release
 
-  # enable and install from the main repository so that we can update from that to the testing package.
-  percona-release enable telemetry
-  if [ "$OS" == "ol" ] || [ "$OS" == "amzn" ]; then
+  if [ "$OS" == "ol" ]; then
+    # enable and install from the main repository so that we can update from that to the testing package.
+    percona-release enable telemetry
     yum install -y percona-telemetry-agent
+  elif [ "$OS" == "amzn" ]; then
+    # install from testing repo until we publish to main
+    percona-release enable telemetry testing
+    yum -y install https://repo.percona.com/prel/yum/testing/2023/RPMS/noarch/percona-release-1.0-30.noarch.rpm
   else
+    # enable and install from the main repository so that we can update from that to the testing package.
+    percona-release enable telemetry
     apt-get update
     apt-get install -y percona-telemetry-agent
   fi
@@ -225,7 +242,6 @@ test_percona_telemetry_update() {
   # clean up
   remove_percona_telemetry
 }
-
 
 test_percona_telemetry_installation
 test_percona_telemetry_update "enabled"
