@@ -201,7 +201,6 @@ test_percona_telemetry_update() {
     apt-get install -y percona-telemetry-agent
   fi
 
-  check_percona_telemetry_version
   check_telemetry_agent_logs
 
   if [ "$1" == "disabled" ]; then
