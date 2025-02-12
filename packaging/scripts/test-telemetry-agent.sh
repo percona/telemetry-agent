@@ -59,9 +59,7 @@ install_percona_release() {
           amzn)
             # Amazon Linux
             if [ "$VERSION_ID" == "2" ] || [ "$VERSION_ID" == "2023" ]; then
-              # yum install -y https://repo.percona.com/yum/percona-release-latest.noarch.rpm
-              # todo: use percona-release from testing repositories until it's released
-              yum -y install https://repo.percona.com/prel/yum/testing/2023/RPMS/noarch/percona-release-1.0-30.noarch.rpm
+              yum install -y https://repo.percona.com/yum/percona-release-latest.noarch.rpm
             else
               echo "Unsupported Amazon Linux version: ${VERSION_ID}"
               exit 1
