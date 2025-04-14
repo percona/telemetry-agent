@@ -6,8 +6,8 @@ require (
 	github.com/golangci/golangci-lint v1.58.2
 	github.com/quasilyte/go-consistent v0.6.1
 	github.com/reviewdog/reviewdog v0.20.3
-	golang.org/x/tools v0.31.0
-	mvdan.cc/gofumpt v0.7.0
+	golang.org/x/tools v0.32.0
+	mvdan.cc/gofumpt v0.8.0
 )
 
 require (
@@ -200,8 +200,8 @@ require (
 	golang.org/x/exp/typeparams v0.0.0-20240314144324-c7f7c6466f7f // indirect
 	golang.org/x/mod v0.24.0 // indirect
 	golang.org/x/oauth2 v0.24.0 // indirect
-	golang.org/x/sync v0.12.0 // indirect
-	golang.org/x/sys v0.31.0 // indirect
+	golang.org/x/sync v0.13.0 // indirect
+	golang.org/x/sys v0.32.0 // indirect
 	golang.org/x/text v0.19.0 // indirect
 	golang.org/x/time v0.7.0 // indirect
 	google.golang.org/protobuf v1.35.2 // indirect
