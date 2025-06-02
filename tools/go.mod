@@ -4,7 +4,7 @@ go 1.23.0
 
 require (
 	github.com/golangci/golangci-lint v1.58.2
-	github.com/quasilyte/go-consistent v0.6.1
+	github.com/quasilyte/go-consistent v0.6.2
 	github.com/reviewdog/reviewdog v0.20.3
 	golang.org/x/tools v0.33.0
 	mvdan.cc/gofumpt v0.7.0
