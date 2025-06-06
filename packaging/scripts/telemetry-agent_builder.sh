@@ -150,15 +150,23 @@ get_system() {
 
 install_golang() {
     if [ x"$ARCH" = "xx86_64" ]; then
-      GO_ARCH="amd64"
+        GO_ARCH="amd64"
     elif [ x"$ARCH" = "xaarch64" ]; then
-      GO_ARCH="arm64"
+        GO_ARCH="arm64"
     fi
-    wget https://golang.org/dl/go1.23.4.linux-${GO_ARCH}.tar.gz -O /tmp/golang1.23.4.tar.gz
-    tar --transform=s,go,go1.23.4, -zxf /tmp/golang1.23.4.tar.gz
+    GO_VERSION="1.24.3"
+    GO_TAR="go${GO_VERSION}.linux-${GO_ARCH}.tar.gz"
+    GO_URL="https://downloads.percona.com/downloads/packaging/go/${GO_TAR}"
+    DL_PATH="/tmp/${GO_TAR}"
+    for i in {1..3}; do
+        wget -q "$GO_URL" -O "$DL_PATH" && break
+        echo "Failed to download GOLang, retrying in 10 seconds..."
+        sleep 10
+    done
+    tar --transform=s,go,go${GO_VERSION}, -zxf "$DL_PATH"
     rm -rf /usr/local/go*
-    mv go1.23.4 /usr/local/
-    ln -s /usr/local/go1.23.4 /usr/local/go
+    mv go${GO_VERSION} /usr/local/
+    ln -s /usr/local/go${GO_VERSION} /usr/local/go
 }
 
 install_deps() {
