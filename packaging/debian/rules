@@ -37,9 +37,25 @@ override_dh_auto_build:
 	mkdir -p build/src/github.com/percona/percona-telemetry-agent
 	find . -mindepth 1 -maxdepth 1 -not -name build -exec cp -r {} build/src/github.com/percona/percona-telemetry-agent/ \;
 ifeq ($(DEB_BUILD_ARCH),arm64)
-	cd build/src/github.com/percona/percona-telemetry-agent/ && env GOARCH=arm64 make build
+	cd build/src/github.com/percona/percona-telemetry-agent/ && \
+	export GO111MODULE=on; \
+	export GOMODCACHE=${PWD}/go-mod-cache; \
+	for i in 1 2 3; do \
+		go mod tidy && go mod download && break; \
+		echo "go mod commands failed, retrying in 10 seconds..."; \
+		sleep 10; \
+	done; \
+	env GOARCH=arm64 make build
 else
-	cd build/src/github.com/percona/percona-telemetry-agent/ && env GOARCH=amd64 make build
+	cd build/src/github.com/percona/percona-telemetry-agent/ && \
+	export GO111MODULE=on; \
+	export GOMODCACHE=${PWD}/go-mod-cache; \
+	for i in 1 2 3; do \
+		go mod tidy && go mod download && break; \
+		echo "go mod commands failed, retrying in 10 seconds..."; \
+		sleep 10; \
+	done; \
+	env GOARCH=amd64 make build
 endif
 	touch $@
 
