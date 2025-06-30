@@ -5,7 +5,7 @@ go 1.24
 toolchain go1.24.4
 
 require (
-	github.com/alecthomas/kong v1.11.0
+	github.com/alecthomas/kong v1.12.0
 	github.com/go-resty/resty/v2 v2.16.5
 	github.com/google/uuid v1.6.0
 	github.com/knqyf263/go-deb-version v0.0.0-20241115132648-6f4aee6ccd23
