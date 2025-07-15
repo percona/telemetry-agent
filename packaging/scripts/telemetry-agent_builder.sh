@@ -178,7 +178,7 @@ install_deps() {
             yum -y install epel-release
         fi
         yum -y install git wget
-        yum -y install rpm-build make rpmlint rpmdevtools golang
+        yum -y install rpm-build make rpmdevtools golang
         install_golang
     else
         until apt-get update; do
