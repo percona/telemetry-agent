@@ -49,7 +49,7 @@ install_percona_release() {
   case "$OS" in
           ol)
               # Oracle Linux
-              if [ "$VERSION_ID" == "8" ] || [ "$VERSION_ID" == "9" ]; then
+              if [ "$VERSION_ID" == "8" ] || [ "$VERSION_ID" == "9" ] || [ "$VERSION_ID" == "10" ]; then
                   yum install -y https://repo.percona.com/yum/percona-release-latest.noarch.rpm
               else
                   echo "Unsupported Oracle Linux version: ${VERSION_ID}"

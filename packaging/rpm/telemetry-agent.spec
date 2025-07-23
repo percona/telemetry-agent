@@ -48,7 +48,15 @@ export GOARCH=amd64
 mkdir -p src/github.com/percona/
 mv percona-telemetry-agent-%{version} src/github.com/percona/percona-telemetry-agent
 ln -s src/github.com/percona/percona-telemetry-agent percona-telemetry-agent-%{version}
-cd src/github.com/percona/percona-telemetry-agent && env GOARCH=${GOARCH} make build
+cd src/github.com/percona/percona-telemetry-agent
+export GO111MODULE=on
+export GOMODCACHE=$(pwd)/go-mod-cache
+for i in {1..3}; do
+    go mod tidy && go mod download && break
+    echo "go mod commands failed, retrying in 10 seconds..."
+    sleep 10
+done
+env GOARCH=${GOARCH} make build
 cd %{_builddir}
 
 %install
