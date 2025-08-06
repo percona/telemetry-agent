@@ -47,7 +47,7 @@ remove_percona_telemetry() {
 
 install_percona_release() {
   case "$OS" in
-          ol)
+          ol | rhel)
               # Oracle Linux
               if [ "$VERSION_ID" == "8" ] || [ "$VERSION_ID" == "9" ] || [ "$VERSION_ID" == "10" ]; then
                   yum install -y https://repo.percona.com/yum/percona-release-latest.noarch.rpm
@@ -144,7 +144,7 @@ test_percona_telemetry_installation() {
     install_percona_release
     #percona-release enable telemetry release
 
-    if [ "$OS" == "ol" ] || [ "$OS" == "amzn" ]; then
+    if [ "$OS" == "ol" ] || [ "$OS" == "amzn" ] || [ "$OS" == "rhel" ]; then
         yum install -y percona-telemetry-agent
     else
         apt-get update
@@ -184,13 +184,9 @@ test_percona_telemetry_update() {
 
   install_percona_release
 
-  if [ "$OS" == "ol" ]; then
+  if [ "$OS" == "ol" ] || [ "$OS" == "amzn" ] || [ "$OS" == "rhel" ]; then
     # enable and install from the main repository so that we can update from that to the testing package.
     percona-release enable telemetry
-    yum install -y percona-telemetry-agent
-  elif [ "$OS" == "amzn" ]; then
-    # install from testing repo until we publish to main
-    percona-release enable telemetry testing
     yum install -y percona-telemetry-agent
   else
     # enable and install from the main repository so that we can update from that to the testing package.
@@ -219,7 +215,7 @@ test_percona_telemetry_update() {
 
   # upgrade TA and recheck
   percona-release enable telemetry testing
-  if [ "$OS" == "ol" ] || [ "$OS" == "amzn" ]; then
+  if [ "$OS" == "ol" ] || [ "$OS" == "amzn" ] || [ "$OS" == "rhel" ]; then
       yum update -y percona-telemetry-agent
   else
       apt-get update
