@@ -16,7 +16,7 @@ remove_percona_telemetry() {
     echo "Checking if Percona telemetry agent is installed..."
 
     case "$OS" in
-        ol | amzn)
+        ol | amzn | rhel)
             # Oracle Linux and Amazon Linux
             if rpm -q percona-telemetry-agent; then
                 echo "Percona telemetry agent is installed. Removing..."
