@@ -6,7 +6,7 @@ toolchain go1.25.4
 
 require (
 	github.com/alecthomas/kong v1.13.0
-	github.com/go-resty/resty/v2 v2.16.5
+	github.com/go-resty/resty/v2 v2.17.0
 	github.com/google/uuid v1.6.0
 	github.com/knqyf263/go-deb-version v0.0.0-20241115132648-6f4aee6ccd23
 	github.com/percona-platform/saas v0.0.0-20240311135437-dec101d42466
