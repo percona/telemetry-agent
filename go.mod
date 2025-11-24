@@ -11,7 +11,7 @@ require (
 	github.com/knqyf263/go-deb-version v0.0.0-20241115132648-6f4aee6ccd23
 	github.com/percona-platform/saas v0.0.0-20240311135437-dec101d42466
 	github.com/stretchr/testify v1.11.1
-	go.uber.org/zap v1.27.0
+	go.uber.org/zap v1.27.1
 	google.golang.org/protobuf v1.36.10
 )
 
