@@ -12,7 +12,7 @@ require (
 	github.com/percona-platform/saas v0.0.0-20240311135437-dec101d42466
 	github.com/stretchr/testify v1.11.1
 	go.uber.org/zap v1.27.1
-	google.golang.org/protobuf v1.36.10
+	google.golang.org/protobuf v1.36.11
 )
 
 require (
