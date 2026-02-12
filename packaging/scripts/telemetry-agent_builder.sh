@@ -154,11 +154,11 @@ install_golang() {
     elif [ x"$ARCH" = "xaarch64" ]; then
       GO_ARCH="arm64"
     fi
-    wget https://golang.org/dl/go1.25.6.linux-${GO_ARCH}.tar.gz -O /tmp/golang1.25.6.tar.gz
-    tar --transform=s,go,go1.25.6, -zxf /tmp/golang1.25.6.tar.gz
+    wget https://golang.org/dl/go1.25.7.linux-${GO_ARCH}.tar.gz -O /tmp/golang1.25.7.tar.gz
+    tar --transform=s,go,go1.25.7, -zxf /tmp/golang1.25.7.tar.gz
     rm -rf /usr/local/go*
-    mv go1.25.6 /usr/local/
-    ln -s /usr/local/go1.25.6 /usr/local/go
+    mv go1.25.7 /usr/local/
+    ln -s /usr/local/go1.25.7 /usr/local/go
 }
 
 install_deps() {
