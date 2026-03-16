@@ -1,12 +1,12 @@
 module github.com/percona/telemetry-agent/tools
 
-go 1.24.0
+go 1.25.0
 
 require (
 	github.com/golangci/golangci-lint v1.58.2
 	github.com/quasilyte/go-consistent v0.6.2
 	github.com/reviewdog/reviewdog v0.20.3
-	golang.org/x/tools v0.40.0
+	golang.org/x/tools v0.43.0
 	mvdan.cc/gofumpt v0.7.0
 )
 
@@ -198,11 +198,11 @@ require (
 	golang.org/x/crypto v0.28.0 // indirect
 	golang.org/x/exp v0.0.0-20240103183307-be819d1f06fc // indirect
 	golang.org/x/exp/typeparams v0.0.0-20240314144324-c7f7c6466f7f // indirect
-	golang.org/x/mod v0.31.0 // indirect
+	golang.org/x/mod v0.34.0 // indirect
 	golang.org/x/oauth2 v0.24.0 // indirect
-	golang.org/x/sync v0.19.0 // indirect
-	golang.org/x/sys v0.39.0 // indirect
-	golang.org/x/telemetry v0.0.0-20251203150158-8fff8a5912fc // indirect
+	golang.org/x/sync v0.20.0 // indirect
+	golang.org/x/sys v0.42.0 // indirect
+	golang.org/x/telemetry v0.0.0-20260311193753-579e4da9a98c // indirect
 	golang.org/x/text v0.19.0 // indirect
 	golang.org/x/time v0.7.0 // indirect
 	golang.org/x/tools/go/expect v0.1.1-deprecated // indirect
