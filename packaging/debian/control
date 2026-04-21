@@ -1,7 +1,7 @@
 Source: percona-telemetry-agent
 Section: utils
 Priority: optional
-Maintainer: Percona LLC
+Maintainer: Percona Development Team <info@percona.com>
 Version: %{version}
 Homepage: https://percona.com
 
