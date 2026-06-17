@@ -1,5 +1,4 @@
 .DEFAULT_GOAL := help
-CURDIR := $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
 BIN_DIR := $(CURDIR)/bin
 
 .PHONY: help clean init build format check test test-cover test-crosscover run prepare-pr
@@ -52,7 +51,7 @@ format:                 ## Format source code
 	go mod tidy
 
 GOLANG_CI_LINT_RUN_OPTS ?=
-check:                  ## Run checks/linters for the whole project
+check:                  ## Run checks/linters for the changes
 	LOG_LEVEL=error $(BIN_DIR)/golangci-lint run -c=.golangci.yml --new-from-rev=$(shell git merge-base main HEAD) --new $(GOLANG_CI_LINT_RUN_OPTS)
 
 test:                   ## Run tests
