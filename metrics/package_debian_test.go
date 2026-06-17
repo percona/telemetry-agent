@@ -279,6 +279,7 @@ ii |pmm2-client|2.41.2-6.1.jammy
 
 func TestParseDebianRepositoryOutput(t *testing.T) {
 	t.Parallel()
+
 	repositoryErr := errors.New("command line option 'r' [from -res] is not understood in combination with the other options")
 
 	tests := []struct {

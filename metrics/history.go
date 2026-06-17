@@ -40,30 +40,37 @@ func WriteMetricsToHistory(historyFile string, platformReport *platformReporter.
 	if platformReport == nil || len(platformReport.GetReports()) == 0 {
 		l.Errorw("attempt to write invalid Percona Platform report into history file",
 			zap.Any("report", platformReport))
+
 		return errors.New("invalid Percona Platform report, ReportRequest.Reports is empty")
 	}
 
 	cleanFilePath := filepath.Clean(historyFile)
 	// check that directory exists
 	dirPath := filepath.Dir(cleanFilePath)
-	if err := validateDirectory(dirPath); err != nil {
+
+	err := validateDirectory(dirPath)
+	if err != nil {
 		return fmt.Errorf("can't read directory with history metric files: %w", err)
 	}
 
 	// Marshal the message to pretty JSON
 	marshalOpts := protojson.MarshalOptions{Indent: "  ", UseProtoNames: false}
+
 	jsonBytes, err := marshalOpts.Marshal(platformReport)
 	if err != nil {
 		l.Errorw("failed to marshal Percona Platform report into JSON", zap.Error(err))
 		return fmt.Errorf("can't marshal Percona Platform report into JSON: %w", err)
 	}
 
-	if err := os.WriteFile(cleanFilePath, jsonBytes, metricsFilePermissions); err != nil {
+	err = os.WriteFile(cleanFilePath, jsonBytes, metricsFilePermissions)
+	if err != nil {
 		l.Errorw("failed to write history file",
 			zap.String("file", historyFile),
 			zap.Error(err))
+
 		return fmt.Errorf("can't write history file: %w", err)
 	}
+
 	return nil
 }
 
@@ -75,7 +82,8 @@ func CleanupMetricsHistory(historyDirectoryPath string, keepInterval int) error 
 
 	cleanHistoryPath := filepath.Clean(historyDirectoryPath)
 	// check that directory exists
-	if err := validateDirectory(cleanHistoryPath); err != nil {
+	err := validateDirectory(cleanHistoryPath)
+	if err != nil {
 		return fmt.Errorf("can't read directory with history metrics files: %w", err)
 	}
 
@@ -85,6 +93,7 @@ func CleanupMetricsHistory(historyDirectoryPath string, keepInterval int) error 
 	}
 
 	timeThreshold := time.Now().Add(-time.Duration(keepInterval) * time.Second)
+
 	for _, file := range files {
 		fl := l.With(zap.String("file", filepath.Join(cleanHistoryPath, file.Name())))
 
@@ -107,15 +116,19 @@ func CleanupMetricsHistory(historyDirectoryPath string, keepInterval int) error 
 			fl.Debugw("file age threshold is not reached, skipping",
 				zap.Time("creationTime", t),
 				zap.Time("threshold", timeThreshold))
+
 			continue
 		}
 
 		fl.Debug("removing file")
-		if err := os.Remove(filepath.Clean(filepath.Join(cleanHistoryPath, file.Name()))); err != nil {
+
+		err = os.Remove(filepath.Clean(filepath.Join(cleanHistoryPath, file.Name())))
+		if err != nil {
 			fl.Errorw("error removing metric file, skipping", zap.Error(err))
 			continue
 		}
 	}
+
 	return nil
 }
 
@@ -124,8 +137,10 @@ func validateDirectory(dirPath string) error {
 	if os.IsNotExist(err) {
 		return err
 	}
+
 	if !info.IsDir() {
 		return errors.New("provided path is not a directory")
 	}
+
 	return nil
 }

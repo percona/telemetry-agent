@@ -81,7 +81,8 @@ func TestGetInstanceID(t *testing.T) {
 			name: "file_presents_single_line",
 			setupTestData: func(t *testing.T, tmpDir, instanceFile, instanceID string) {
 				t.Helper()
-				err := os.WriteFile(filepath.Join(tmpDir, instanceFile), []byte(fmt.Sprintf("%s:%s\n", InstanceIDKey, instanceID)), metricsFilePermissions)
+
+				err := os.WriteFile(filepath.Join(tmpDir, instanceFile), fmt.Appendf(nil, "%s:%s\n", InstanceIDKey, instanceID), metricsFilePermissions)
 				require.NoError(t, err)
 			},
 			postCheckTestData: func(t *testing.T, tmpDir, instanceFile, wantInstanceID string) {
@@ -96,7 +97,8 @@ func TestGetInstanceID(t *testing.T) {
 			name: "file_presents_single_line_key_corrupted",
 			setupTestData: func(t *testing.T, tmpDir, instanceFile, instanceID string) {
 				t.Helper()
-				err := os.WriteFile(filepath.Join(tmpDir, instanceFile), []byte(fmt.Sprintf("%scorrupt:%s\n", InstanceIDKey, instanceID)), metricsFilePermissions)
+
+				err := os.WriteFile(filepath.Join(tmpDir, instanceFile), fmt.Appendf(nil, "%scorrupt:%s\n", InstanceIDKey, instanceID), metricsFilePermissions)
 				require.NoError(t, err)
 			},
 			postCheckTestData: func(t *testing.T, tmpDir, instanceFile, wantInstanceID string) {
@@ -111,7 +113,8 @@ func TestGetInstanceID(t *testing.T) {
 			name: "file_presents_single_line_value_corrupted",
 			setupTestData: func(t *testing.T, tmpDir, instanceFile, instanceID string) {
 				t.Helper()
-				err := os.WriteFile(filepath.Join(tmpDir, instanceFile), []byte(fmt.Sprintf("%s:%scorrupt\n", InstanceIDKey, instanceID)), metricsFilePermissions)
+
+				err := os.WriteFile(filepath.Join(tmpDir, instanceFile), fmt.Appendf(nil, "%s:%scorrupt\n", InstanceIDKey, instanceID), metricsFilePermissions)
 				require.NoError(t, err)
 			},
 			postCheckTestData: func(t *testing.T, tmpDir, instanceFile, wantInstanceID string) {
@@ -126,6 +129,7 @@ func TestGetInstanceID(t *testing.T) {
 			name: "file_presents_multi_lines",
 			setupTestData: func(t *testing.T, tmpDir, instanceFile, instanceID string) {
 				t.Helper()
+
 				data := fmt.Sprintf("PRODUCT_FAMILY_PS: 1\nPRODUCT_FAMILY_PXC: 1\nPRODUCT_FAMILY_PSMDB: 1\n%s:%s\n", InstanceIDKey, instanceID)
 				err := os.WriteFile(filepath.Join(tmpDir, instanceFile), []byte(data), 0o600)
 				require.NoError(t, err)
@@ -142,6 +146,7 @@ func TestGetInstanceID(t *testing.T) {
 			name: "file_presents_multi_lines_key_corrupted",
 			setupTestData: func(t *testing.T, tmpDir, instanceFile, instanceID string) {
 				t.Helper()
+
 				data := fmt.Sprintf("PRODUCT_FAMILY_PS: 1\nPRODUCT_FAMILY_PXC: 1\nPRODUCT_FAMILY_PSMDB: 1\n%scorrupt:%s\n", InstanceIDKey, instanceID)
 				err := os.WriteFile(filepath.Join(tmpDir, instanceFile), []byte(data), 0o600)
 				require.NoError(t, err)
@@ -158,6 +163,7 @@ func TestGetInstanceID(t *testing.T) {
 			name: "file_presents_multi_lines_value_corrupted",
 			setupTestData: func(t *testing.T, tmpDir, instanceFile, instanceID string) {
 				t.Helper()
+
 				data := fmt.Sprintf("PRODUCT_FAMILY_PS: 1\nPRODUCT_FAMILY_PXC: 1\nPRODUCT_FAMILY_PSMDB: 1\n%s:%scorrupt\n", InstanceIDKey, instanceID)
 				err := os.WriteFile(filepath.Join(tmpDir, instanceFile), []byte(data), 0o600)
 				require.NoError(t, err)
@@ -176,12 +182,7 @@ func TestGetInstanceID(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			tmpDir, err := os.MkdirTemp("", "test")
-			require.NoError(t, err)
-			t.Cleanup(func() {
-				_ = os.RemoveAll(tmpDir)
-			})
-
+			tmpDir := t.TempDir()
 			instanceID := uuid.New().String()
 			instanceFile := "telemetry_uuid"
 
@@ -231,6 +232,7 @@ func TestReadOSReleaseFile(t *testing.T) {
 			name: "file_exists",
 			setupTestData: func(t *testing.T, tmpDir, releaseFile string) {
 				t.Helper()
+
 				fileContent := `NAME="Oracle Linux Server"
 VERSION="9.2"
 ID="ol"
@@ -266,12 +268,7 @@ ORACLE_SUPPORT_PRODUCT_VERSION=9.2
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			tmpDir, err := os.MkdirTemp("", "testOS")
-			require.NoError(t, err)
-			t.Cleanup(func() {
-				_ = os.RemoveAll(tmpDir)
-			})
-
+			tmpDir := t.TempDir()
 			releaseFile := "os-release"
 			tt.setupTestData(t, tmpDir, releaseFile)
 			require.Equal(t, tt.want, readOSReleaseFile(filepath.Join(tmpDir, releaseFile)))
@@ -306,6 +303,7 @@ func TestReadSystemReleaseFile(t *testing.T) {
 			name: "system_format",
 			setupTestData: func(t *testing.T, tmpDir, releaseFile string) {
 				t.Helper()
+
 				fileContent := "Oracle Linux Server release 9.2"
 				err := os.WriteFile(filepath.Join(tmpDir, releaseFile), []byte(fileContent), 0o600)
 				require.NoError(t, err)
@@ -321,6 +319,7 @@ func TestReadSystemReleaseFile(t *testing.T) {
 			name: "redhat_format",
 			setupTestData: func(t *testing.T, tmpDir, releaseFile string) {
 				t.Helper()
+
 				fileContent := "Red Hat Enterprise Linux release 9.2 (Plow)"
 				err := os.WriteFile(filepath.Join(tmpDir, releaseFile), []byte(fileContent), 0o600)
 				require.NoError(t, err)
@@ -338,12 +337,7 @@ func TestReadSystemReleaseFile(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			tmpDir, err := os.MkdirTemp("", "testOS")
-			require.NoError(t, err)
-			t.Cleanup(func() {
-				_ = os.RemoveAll(tmpDir)
-			})
-
+			tmpDir := t.TempDir()
 			releaseFile := "system-release"
 			tt.setupTestData(t, tmpDir, releaseFile)
 			require.Equal(t, tt.want, readSystemReleaseFile(filepath.Join(tmpDir, releaseFile)))
@@ -388,6 +382,7 @@ func TestGetDeploymentInfo(t *testing.T) { //nolint:paralleltest
 	for _, tt := range testCases { //nolint:paralleltest
 		t.Run(tt.name, func(t *testing.T) {
 			tt.setupTestData(t)
+
 			got := getDeploymentInfo()
 			require.Equal(t, tt.expected, got)
 		})
@@ -423,9 +418,9 @@ func TestParseHardwareInfoOutput(t *testing.T) {
 		},
 		{
 			name:     "valid_output_rhel",
-			hwOutput: []byte("x86_64 x86_64"), //nolint:dupword
+			hwOutput: []byte("x86_64 x86_64"),
 			hwErr:    nil,
-			expected: "x86_64 x86_64", //nolint:dupword
+			expected: "x86_64 x86_64",
 		},
 		{
 			name:     "valid_output_debian_extra_spaces",
@@ -437,7 +432,7 @@ func TestParseHardwareInfoOutput(t *testing.T) {
 			name:     "valid_output_rhel_extra_spaces",
 			hwOutput: []byte("  x86_64 x86_64  "),
 			hwErr:    nil,
-			expected: "x86_64 x86_64", //nolint:dupword
+			expected: "x86_64 x86_64",
 		},
 	}
 

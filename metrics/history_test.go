@@ -197,23 +197,19 @@ func TestWriteMetricsToHistory(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			tmpDir, err := os.MkdirTemp("", "test-history")
-			require.NoError(t, err)
-			t.Cleanup(func() {
-				_ = os.RemoveAll(tmpDir)
-			})
-
+			tmpDir := t.TempDir()
 			currTime := time.Now()
 			token := uuid.New().String()
 			historyFile := fmt.Sprintf("%d-history.json", currTime.Unix())
 			tt.setupTestData(t, tmpDir, token, currTime)
 
-			err = WriteMetricsToHistory(filepath.Join(tmpDir, historyFile), tt.request)
+			err := WriteMetricsToHistory(filepath.Join(tmpDir, historyFile), tt.request)
 			if tt.wantErr {
 				require.Error(t, err)
 			} else {
 				require.NoError(t, err)
 			}
+
 			tt.postCheckTestData(t, tmpDir, historyFile, token, currTime, tt.request)
 		})
 	}
@@ -307,20 +303,16 @@ func TestCleanupMetricsHistory(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			tmpDir, err := os.MkdirTemp("", "test-history")
-			require.NoError(t, err)
-			t.Cleanup(func() {
-				_ = os.RemoveAll(tmpDir)
-			})
-
+			tmpDir := t.TempDir()
 			tt.setupTestData(t, tmpDir)
 
-			err = CleanupMetricsHistory(tmpDir, tt.keepInterval)
+			err := CleanupMetricsHistory(tmpDir, tt.keepInterval)
 			if tt.wantErr {
 				require.Error(t, err)
 			} else {
 				require.NoError(t, err)
 			}
+
 			tt.postCheckTestData(t, tmpDir)
 		})
 	}

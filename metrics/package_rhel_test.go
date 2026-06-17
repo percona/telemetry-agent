@@ -18,8 +18,9 @@ func TestIsRHELFamily(t *testing.T) {
 	}
 }
 
-func TestParseRhelPackageOutput(t *testing.T) { //nolint:maintidx
+func TestParseRhelPackageOutput(t *testing.T) {
 	t.Parallel()
+
 	rpmError := errors.New("rpm: --test may only be specified during package installation and erasure")
 
 	tests := []struct {

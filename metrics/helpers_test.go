@@ -29,6 +29,7 @@ import (
 
 func writeTempFiles(t *testing.T, path string, files ...string) {
 	t.Helper()
+
 	for _, file := range files {
 		err := os.WriteFile(filepath.Join(path, file), []byte(file), metricsFilePermissions)
 		require.NoError(t, err)
@@ -37,6 +38,7 @@ func writeTempFiles(t *testing.T, path string, files ...string) {
 
 func checkFilesExist(t *testing.T, path string, files ...string) {
 	t.Helper()
+
 	for _, file := range files {
 		filePath := filepath.Join(path, file)
 		_, err := os.Stat(filePath)
@@ -46,6 +48,7 @@ func checkFilesExist(t *testing.T, path string, files ...string) {
 
 func checkFilesAbsent(t *testing.T, path string, files ...string) {
 	t.Helper()
+
 	for _, file := range files {
 		filePath := filepath.Join(path, file)
 		_, err := os.Stat(filePath)
@@ -55,15 +58,20 @@ func checkFilesAbsent(t *testing.T, path string, files ...string) {
 
 func checkInstanceIDInFile(t *testing.T, path, fileName, wantInstanceID string) {
 	t.Helper()
+
 	filePath := filepath.Join(path, fileName)
 	file, err := os.Open(filepath.Clean(filePath))
 	require.NoError(t, err)
 	// do not forget to close file.
-	defer file.Close() //nolint:errcheck
+	defer func() {
+		_ = file.Close()
+	}()
 
 	var instanceID string
+
 	scanner := bufio.NewScanner(file)
 	scanner.Split(customSplitFunc)
+
 	for scanner.Scan() {
 		if parts := strings.Split(scanner.Text(), ":"); len(parts) == 2 && parts[0] == InstanceIDKey {
 			instanceID = strings.TrimSpace(parts[1])
@@ -77,6 +85,7 @@ func checkInstanceIDInFile(t *testing.T, path, fileName, wantInstanceID string) 
 
 func checkDirectoryContentCount(t *testing.T, tmpDir string, wantCount int) {
 	t.Helper()
+
 	files, err := os.ReadDir(tmpDir)
 	require.NoError(t, err)
 	require.Len(t, files, wantCount)
@@ -84,6 +93,7 @@ func checkDirectoryContentCount(t *testing.T, tmpDir string, wantCount int) {
 
 func checkHistoryFileContent(t *testing.T, tmpDir, historyFile string, req *platformReporter.ReportRequest) {
 	t.Helper()
+
 	bytes, err := os.ReadFile(filepath.Clean(filepath.Join(tmpDir, historyFile)))
 	require.NoError(t, err)
 	require.NotEmpty(t, bytes)

@@ -77,10 +77,11 @@ func customSplitFunc(data []byte, atEOF bool) (int, []byte, error) {
 		// skip the delimiter in advancing to the next pair
 		return i + 1, data[0:i], nil
 	}
+
 	return 0, nil, nil
 }
 
-func getInstanceID(instanceFile string) string { //nolint:cyclop
+func getInstanceID(instanceFile string) string {
 	cleanInstanceFile := filepath.Clean(instanceFile)
 	l := zap.L().Sugar().With(zap.String("file", cleanInstanceFile))
 	l.Debug("processing Percona telemetry file")
@@ -94,51 +95,70 @@ func getInstanceID(instanceFile string) string { //nolint:cyclop
 	//
 	// In case of any error during file processing, new random instanceId is generated and
 	// is written into telemetry file.
+	var err error
+
 	dirName := filepath.Dir(cleanInstanceFile)
-	if _, err := os.Stat(dirName); os.IsNotExist(err) {
+
+	_, err = os.Stat(dirName)
+	if os.IsNotExist(err) {
 		// directory is absent, creating
-		if err := os.MkdirAll(dirName, os.ModePerm|0o775); err != nil {
+		err = os.MkdirAll(dirName, os.ModePerm|0o775)
+		if err != nil {
 			l.Errorw("can't create directory, fallback to random UUID",
 				zap.String("directory", dirName),
 				zap.Error(err))
 			// fallback to random UUID
 			return newInstanceID
 		}
+
 		createTelemetryFile(cleanInstanceFile, newInstanceID)
+
 		return newInstanceID
 	}
 
 	var file *os.File
-	var err error
-	if file, err = os.Open(cleanInstanceFile); err != nil {
+
+	file, err = os.Open(cleanInstanceFile)
+	if err != nil {
 		if !os.IsNotExist(err) {
 			l.Errorw("failed to read Percona telemetry file, fallback to random UUID", zap.Error(err))
 			// fallback to random UUID
 			createTelemetryFile(cleanInstanceFile, newInstanceID)
+
 			return newInstanceID
 		}
 		// telemetry file is absent, fill values on our own
 		// and write back to file.
 		l.Info("Percona telemetry file is absent, creating")
 		createTelemetryFile(cleanInstanceFile, newInstanceID)
+
 		return newInstanceID
 	}
 
 	// do not forget to close file.
-	defer file.Close() //nolint:errcheck
+	defer func() {
+		fErr := file.Close()
+		if fErr != nil {
+			l.Errorw("failed to close file", zap.Error(fErr))
+		}
+	}()
 
-	if st, err := file.Stat(); err != nil || st.Size() == 0 {
+	st, err := file.Stat()
+	if err != nil || st.Size() == 0 {
 		l.Errorw("failed to get file info, fallback to random UUID", zap.Error(err))
 		// fallback to random UUID
 		createTelemetryFile(cleanInstanceFile, newInstanceID)
+
 		return newInstanceID
 	}
 
 	// file exists and is not empty.
 	// get "instanceID" value from file.
 	var instanceID string
+
 	scanner := bufio.NewScanner(file)
 	scanner.Split(customSplitFunc)
+
 	for scanner.Scan() {
 		if parts := strings.Split(scanner.Text(), ":"); len(parts) == 2 && parts[0] == InstanceIDKey {
 			instanceID = strings.TrimSpace(parts[1])
@@ -146,20 +166,25 @@ func getInstanceID(instanceFile string) string { //nolint:cyclop
 		}
 	}
 
-	if err := scanner.Err(); err != nil {
+	err = scanner.Err()
+	if err != nil {
 		l.Warnw("failed to read instanceId from Percona telemetry file, fallback to random UUID", zap.Error(err))
 		// fallback to random UUID
 		createTelemetryFile(cleanInstanceFile, newInstanceID)
+
 		return newInstanceID
 	}
 
-	if err := uuid.Validate(instanceID); err != nil {
+	err = uuid.Validate(instanceID)
+	if err != nil {
 		// "instanceID" is read from file, but it is invalid.
 		l.Warn("failed to obtain Percona telemetry instanceID, fallback to random UUID")
 		// fallback to random UUID
 		createTelemetryFile(cleanInstanceFile, newInstanceID)
+
 		return newInstanceID
 	}
+
 	return instanceID
 }
 
@@ -168,7 +193,8 @@ func getRandomUUID() string {
 }
 
 func createTelemetryFile(instanceFile, instanceID string) {
-	if err := os.WriteFile(instanceFile, []byte(fmt.Sprintf("%s:%s\n", InstanceIDKey, instanceID)), metricsFilePermissions); err != nil {
+	err := os.WriteFile(instanceFile, fmt.Appendf(nil, "%s:%s\n", InstanceIDKey, instanceID), metricsFilePermissions)
+	if err != nil {
 		zap.L().Sugar().With(zap.String("file", instanceFile)).
 			Errorw("failed to write Percona telemetry file", zap.Error(err))
 	}
@@ -178,6 +204,7 @@ func getDeploymentInfo() string {
 	if _, found := os.LookupEnv(perconaDockerEnv); found {
 		return deploymentDocker
 	}
+
 	return deploymentPackage
 }
 
@@ -187,39 +214,54 @@ func getOSInfo() string {
 			return val
 		}
 	}
+
 	filePath := filepath.Join("/etc", "os-release")
-	if _, err := os.Stat(filePath); err == nil {
+
+	_, err := os.Stat(filePath)
+	if err == nil {
 		zap.L().Sugar().Debugw("getting OS info from file", zap.String("file", filePath))
 		return readOSReleaseFile(filePath)
 	}
 
 	filePath = filepath.Join("/etc", "system-release")
-	if _, err := os.Stat(filePath); err == nil {
+
+	_, err = os.Stat(filePath)
+	if err == nil {
 		zap.L().Sugar().Debugw("getting OS info from file", zap.String("file", filePath))
 		return readSystemReleaseFile(filePath)
 	}
 
 	filePath = filepath.Join("/etc", "redhat-release")
-	if _, err := os.Stat(filePath); err == nil {
+
+	_, err = os.Stat(filePath)
+	if err == nil {
 		zap.L().Sugar().Debugw("getting OS info from file", zap.String("file", filePath))
 		return readSystemReleaseFile(filePath)
 	}
 
 	filePath = filepath.Join("/etc", "issue")
-	if _, err := os.Stat(filePath); err == nil {
+
+	_, err = os.Stat(filePath)
+	if err == nil {
 		zap.L().Sugar().Debugw("getting OS info from file", zap.String("file", filePath))
 		return readSystemReleaseFile(filePath)
 	}
+
 	return unknownString
 }
 
 func getHardwareInfo(ctx context.Context) string {
-	var unamePath string
-	var err error
-	if unamePath, err = exec.LookPath("uname"); err != nil {
+	var (
+		unamePath string
+		err       error
+	)
+
+	unamePath, err = exec.LookPath("uname")
+	if err != nil {
 		zap.L().Sugar().Warnw("failed to get hardware info, uname binary is not found", zap.Error(err))
 		return fmt.Sprintf("%s %s", unknownString, unknownString)
 	}
+
 	args := []string{unamePath, "-mp"}
 	zap.L().Sugar().Debugw("executing command", zap.String("cmd", strings.Join(args, " ")))
 
@@ -228,6 +270,7 @@ func getHardwareInfo(ctx context.Context) string {
 
 	cmd := exec.CommandContext(cmdCtx, args[0], args[1:]...) // #nosec G204
 	outputB, err := cmd.CombinedOutput()
+
 	return parseHardwareInfoOutput(outputB, err)
 }
 
@@ -237,24 +280,29 @@ func parseHardwareInfoOutput(hwOutput []byte, hwErr error) string {
 		zap.L().Sugar().Debugw("cmd output", zap.ByteString("output", hwOutput), zap.Error(hwErr))
 		return fmt.Sprintf("%s %s", unknownString, unknownString)
 	}
+
 	scanner := bufio.NewScanner(bytes.NewReader(hwOutput))
 	for scanner.Scan() {
 		line := strings.Trim(scanner.Text(), " '\t")
 		if len(line) == 0 {
 			continue
 		}
+
 		return line
 	}
+
 	return fmt.Sprintf("%s %s", unknownString, unknownString)
 }
 
 func readOSReleaseFile(fileName string) string {
 	cleanFileName := filepath.Clean(fileName)
+
 	f, err := os.Open(cleanFileName)
 	if err != nil {
 		zap.L().Sugar().Errorw("failed to open OS file", zap.Error(err), zap.String("file", cleanFileName))
 		return unknownString
 	}
+
 	defer func() {
 		_ = f.Close()
 	}()
@@ -270,7 +318,8 @@ func readOSReleaseFile(fileName string) string {
 		}
 	}
 
-	if err := scanner.Err(); err != nil {
+	err = scanner.Err()
+	if err != nil {
 		zap.L().Sugar().Warnw("error reading OS release file", zap.String("file", cleanFileName), zap.Error(err))
 		return unknownString
 	}
@@ -280,11 +329,13 @@ func readOSReleaseFile(fileName string) string {
 
 func readSystemReleaseFile(fileName string) string {
 	cleanFileName := filepath.Clean(fileName)
+
 	f, err := os.Open(cleanFileName)
 	if err != nil {
 		zap.L().Sugar().Errorw("failed to open system release file", zap.Error(err), zap.String("file", cleanFileName))
 		return unknownString
 	}
+
 	defer func() {
 		_ = f.Close()
 	}()
@@ -294,9 +345,11 @@ func readSystemReleaseFile(fileName string) string {
 		return strings.Trim(scanner.Text(), `"`)
 	}
 
-	if err := scanner.Err(); err != nil {
+	err = scanner.Err()
+	if err != nil {
 		zap.L().Sugar().Warnw("error reading system release file", zap.String("file", cleanFileName), zap.Error(err))
 		return unknownString
 	}
+
 	return unknownString
 }

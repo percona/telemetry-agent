@@ -39,9 +39,9 @@ import (
 // Logger interface is to abstract the logging from Client. Gives control to
 // the Client users, choice of the logger.
 type Logger interface {
-	Errorf(format string, v ...interface{})
-	Warnf(format string, v ...interface{})
-	Debugf(format string, v ...interface{})
+	Errorf(format string, v ...any)
+	Warnf(format string, v ...any)
+	Debugf(format string, v ...any)
 }
 
 // Option is an option for Client returned by constructor.
@@ -163,7 +163,8 @@ func (c *Client) SendTelemetry(ctx context.Context, accessToken string, report *
 		return fmt.Errorf("failed to marshal telemetry request: %w", err)
 	}
 
-	if err = c.sendPostRequest(ctx, path, accessToken, body, nil); err != nil {
+	err = c.sendPostRequest(ctx, path, accessToken, body, nil)
+	if err != nil {
 		return fmt.Errorf("failed to send telemetry data: %w", err)
 	}
 
@@ -197,10 +198,11 @@ func (e Error) String() string {
 	if len(e.Details) != 0 {
 		parts["details"] = strings.Join(e.Details, ",")
 	}
+
 	return fmt.Sprintf("%v", parts)
 }
 
-func (c *Client) sendPostRequest(ctx context.Context, path, accessToken string, requestBody, responseBody interface{}) error {
+func (c *Client) sendPostRequest(ctx context.Context, path, accessToken string, requestBody, responseBody any) error {
 	req := c.createRequest(ctx)
 
 	if requestBody != nil {
@@ -225,10 +227,12 @@ func (c *Client) sendPostRequest(ctx context.Context, path, accessToken string, 
 
 func (c *Client) createRequest(ctx context.Context) *resty.Request {
 	var err Error
+
 	req := c.restyClient.R().
 		SetContext(ctx).
 		SetError(&err)
 	req.Header.Add("Accept", "application/json")
+
 	return req
 }
 
@@ -245,6 +249,7 @@ func checkForError(resp *resty.Response, err error) error {
 		if e, ok := resp.Error().(*Error); ok {
 			return e
 		}
+
 		return errors.New(resp.Status())
 	}
 
