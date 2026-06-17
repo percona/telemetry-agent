@@ -1,50 +1,75 @@
-.PHONY: all build clean default help init test format check test-cover test-crosscover run
-default: help
+.DEFAULT_GOAL := help
+CURDIR := $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
+BIN_DIR := $(CURDIR)/bin
 
-GOPRIVATE=github.com/percona,github.com/percona-platform
-GONOSUMDB=github.com/percona,github.com/percona-platform
-COMPONENT_VERSION ?= $(shell git describe --abbrev=0 --always --tags)
-BUILD ?= $(shell date +%FT%T%z)
-TELEMETRY_AGENT_RELEASE_FULLCOMMIT ?= $(shell git rev-parse HEAD)
-GO_BUILD_LDFLAGS = -X github.com/percona/telemetry-agent/config.Version=${COMPONENT_VERSION} \
-	-X github.com/percona/telemetry-agent/config.BuildDate=${BUILD} \
+.PHONY: help clean init build format check test test-cover test-crosscover run prepare-pr
+
+# --- Go-related variables ----------------------------------------------------------------
+GOPRIVATE := github.com/percona,github.com/percona-platform
+GONOSUMDB := github.com/percona,github.com/percona-platform
+GONOPROXY := github.com/percona,github.com/percona-platform
+
+# --- Git variables ------------------------------------------------------------------------
+COMPONENT_VERSION := $(shell git describe --abbrev=0 --always --tags)
+BUILD_TIME := $(shell date +%FT%T%z)
+TELEMETRY_AGENT_RELEASE_FULLCOMMIT := $(shell git rev-parse HEAD)
+
+# --- Build variables ----------------------------------------------------------------------
+TELEMETRY_AGENT_BINARY_NAME := $(BIN_DIR)/telemetry-agent
+GO_BUILD_LDFLAGS := -X github.com/percona/telemetry-agent/config.Version=${COMPONENT_VERSION} \
+	-X github.com/percona/telemetry-agent/config.BuildDate=${BUILD_TIME} \
 	-X github.com/percona/telemetry-agent/config.Commit=${TELEMETRY_AGENT_RELEASE_FULLCOMMIT} \
 	-extldflags -static
 GOARCH?=amd64
 
-help:                   ## Display this help message
-	@echo "Please use \`make <target>\` where <target> is one of:"
-	@grep '^[a-zA-Z]' $(MAKEFILE_LIST) | \
-		awk -F ':.*?## ' 'NF==2 {printf "  %-26s%s\n", $$1, $$2}'
+# --- Tools variables ---------------------------------------------------------------------
+GOLANGCI_LINT_VERSION := v2.12.2 # Version should match specified in CI
+# ------------------------------------------------------------------------------------------
 
-init:                   ## Install development tools
-	rm -rf bin
-	cd tools && go generate -x -tags=tools
+help: ## Display this help message
+	@echo "Please use \`make <target>\`, where <target> is one of the following:"
+	@awk 'BEGIN {FS = ":.*## "}; /^[a-zA-Z0-9-]+:.*## / {printf "  %-23s%s\n", $$1, $$2}' $(MAKEFILE_LIST)
+
+clean:
+	@echo "🧹 Cleaning up binaries..."
+	rm -f $(BIN_DIR)/*
+	@echo "✅ Cleanup completed."
+
+init: clean                  ## Install development tools
+	@echo "Installing development tools..."
+	curl -sSfL https://golangci-lint.run/install.sh | sh -s -- -b $(CURDIR)/bin $(GOLANGCI_LINT_VERSION)
+	@echo "✅ Development tools installation completed."
 
 build:                ## Compile using plain go build
+	@echo "🚀 Building binaries."
 	CGO_ENABLED=0 \
-	GOARCH=${GOARCH} \
-	go build -a -ldflags="${GO_BUILD_LDFLAGS}" -o ./bin/telemetry-agent ./cmd/telemetry-agent
+	GOARCH=$(GOARCH) \
+	go build -a -ldflags="$(GO_BUILD_LDFLAGS)" -o $(TELEMETRY_AGENT_BINARY_NAME) $(CURDIR)/cmd/telemetry-agent
+	@echo "✅ Building binaries completed."
 
 format:                 ## Format source code
+	$(BIN_DIR)/golangci-lint fmt -c=.golangci.yml
 	go mod tidy
-	bin/gofumpt -l -w .
-	bin/goimports -local github.com/percona/telemetry-agent -l -w .
 
+GOLANG_CI_LINT_RUN_OPTS ?=
 check:                  ## Run checks/linters for the whole project
-	make format
-	bin/go-consistent -exclude=tools -pedantic ./...
-	LOG_LEVEL=error bin/golangci-lint run
+	LOG_LEVEL=error $(BIN_DIR)/golangci-lint run -c=.golangci.yml --new-from-rev=$(shell git merge-base main HEAD) --new $(GOLANG_CI_LINT_RUN_OPTS)
 
 test:                   ## Run tests
-	go test -race -timeout=10m ./...
+	go clean -testcache
+	go test -race -timeout=10m $(CURDIR)/...
 
 test-cover:             ## Run tests and collect per-package coverage information
-	go test -race -timeout=10m -count=1 -coverprofile=cover.out -covermode=atomic ./...
+	go clean -testcache
+	go test -race -timeout=10m -count=1 -coverprofile=cover.out -covermode=atomic $(CURDIR)/...
 
 test-crosscover:        ## Run tests and collect cross-package coverage information
-	go test -race -timeout=10m -count=1 -coverprofile=crosscover.out -covermode=atomic -p=1 -coverpkg=./... ./...
+	go clean -testcache
+	go test -race -timeout=10m -count=1 -coverprofile=crosscover.out -covermode=atomic -p=1 -coverpkg=./... $(CURDIR)/...
 
 run:                    ## Run telemetry-agent with race detector
-	go run -race cmd/telemetry-agent/main.go \
+	go run -race $(CURDIR)/cmd/telemetry-agent/main.go \
 		--log.verbose --log.dev-mode
+
+prepare-pr: format 	## Prepare code for PR commit
+	$(MAKE) GOLANG_CI_LINT_RUN_OPTS=--fix check
