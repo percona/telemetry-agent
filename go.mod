@@ -1,6 +1,7 @@
 module github.com/percona/telemetry-agent
 
-go 1.26.4
+go 1.26.0
+toolchain go1.26.4
 
 require (
 	github.com/alecthomas/kong v1.15.0
