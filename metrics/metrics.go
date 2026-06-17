@@ -107,7 +107,7 @@ func parseMetricsFile(path string) (*File, error) {
 	defer func() {
 		fErr := file.Close()
 		if fErr != nil {
-			l.Errorw("failed to close file", zap.Error(err))
+			l.Errorw("failed to close file", zap.Error(fErr))
 		}
 	}()
 
