@@ -46,8 +46,9 @@ func createTelemetryDirs(dirs ...string) error {
 	const historyDirPermissions = 0o775
 
 	for _, d := range dirs {
-		zap.L().Sugar().Debugw("checking/creating telemetry directory", zap.String("directory", d))
 		cleanPath := filepath.Clean(d)
+		zap.L().Sugar().Debugw("checking/creating telemetry directory",
+			zap.String("directory", cleanPath))
 
 		_, err := os.Stat(cleanPath)
 		if err != nil {
@@ -55,10 +56,10 @@ func createTelemetryDirs(dirs ...string) error {
 				return err
 			}
 
-			err = os.MkdirAll(d, os.ModeDir|historyDirPermissions)
+			err = os.MkdirAll(cleanPath, os.ModeDir|historyDirPermissions)
 			if err != nil {
 				zap.L().Sugar().Errorw("can't create directory",
-					zap.String("directory", d),
+					zap.String("directory", cleanPath),
 					zap.Error(err))
 
 				return err

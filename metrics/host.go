@@ -102,7 +102,7 @@ func getInstanceID(instanceFile string) string {
 	_, err = os.Stat(dirName)
 	if os.IsNotExist(err) {
 		// directory is absent, creating
-		err := os.MkdirAll(dirName, os.ModePerm|0o775)
+		err = os.MkdirAll(dirName, os.ModePerm|0o775)
 		if err != nil {
 			l.Errorw("can't create directory, fallback to random UUID",
 				zap.String("directory", dirName),
