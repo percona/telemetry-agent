@@ -22,7 +22,7 @@ import (
 	"strings"
 	"testing"
 
-	platformReporter "github.com/percona-platform/saas/gen/telemetry/generic"
+	platformReporter "github.com/percona/platform/gen/telemetry/generic"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/encoding/protojson"
 )

@@ -26,7 +26,7 @@ import (
 	"strings"
 	"time"
 
-	platformReporter "github.com/percona-platform/saas/gen/telemetry/generic"
+	platformReporter "github.com/percona/platform/gen/telemetry/generic"
 	"go.uber.org/zap"
 )
 
