@@ -48,8 +48,8 @@ github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 h1:C3w9PqII01/Oq
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822/go.mod h1:+n7T8mK8HuQTcFwEeznm/DIxMOiR9yIdICNftLE1DvQ=
 github.com/mwitkow/go-proto-validators v0.3.2 h1:qRlmpTzm2pstMKKzTdvwPCF5QfBNURSlAgN/R+qbKos=
 github.com/mwitkow/go-proto-validators v0.3.2/go.mod h1:ej0Qp0qMgHN/KtDyUt+Q1/tA7a5VarXUOUxD+oeD30w=
-github.com/percona-platform/saas v0.0.0-20240311135437-dec101d42466 h1:Zo3p6d8sSqos3t71ca4dbTdBPjgAWu8aChfdJN8l8Ss=
-github.com/percona-platform/saas v0.0.0-20240311135437-dec101d42466/go.mod h1:kYndx0QFYqI6iD07BMvc2JUf2g7SAFMEHZm6wnWBslw=
+github.com/percona/platform v0.0.0-20260617103246-376121562906 h1:OyORX7exHGRGlbcls08da4/xkW99CEi9kIfUiHg+nfE=
+github.com/percona/platform v0.0.0-20260617103246-376121562906/go.mod h1:m0t9xXm+0Rc+Pg/QhxykOhz/KiPLxQd3HvXX9pJusOM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 h1:Jamvg5psRIccs7FGNTlIRMkT8wgtp5eCXdBlqhYGL6U=
 github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=

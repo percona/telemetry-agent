@@ -27,8 +27,8 @@ import (
 	"time"
 
 	"github.com/go-resty/resty/v2"
-	genericv1 "github.com/percona-platform/saas/gen/telemetry/generic"
-	"github.com/percona-platform/saas/pkg/logger"
+	genericv1 "github.com/percona/platform/gen/telemetry/generic"
+	"github.com/percona/platform/pkg/logger"
 	"google.golang.org/protobuf/encoding/protojson"
 )
 

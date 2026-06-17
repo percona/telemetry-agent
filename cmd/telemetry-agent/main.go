@@ -28,8 +28,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	platformReporter "github.com/percona-platform/saas/gen/telemetry/generic"
-	platformLogger "github.com/percona-platform/saas/pkg/logger"
+	platformReporter "github.com/percona/platform/gen/telemetry/generic"
+	platformLogger "github.com/percona/platform/pkg/logger"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
