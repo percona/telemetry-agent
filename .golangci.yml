@@ -17,6 +17,9 @@ linters:
     - interfacebloat
     - lll
     - mnd
+    - gocyclo             # using cyclop with the max 30 instead
+    - gochecknoglobals
+    - gomodguard          # deprecated
     - nlreturn
     - tagalign
     - varnamelen
@@ -31,18 +34,26 @@ linters:
               desc: Use "standard errors" instead
     unparam:
       check-exported: true
+    cyclop:
+      max-complexity: 30
   exclusions:
     generated: lax
     rules:
       - linters:
-          - funlen
+          - funlen  # tests may be long
+          - dupword   # tests may contain such
+          - goconst   # not critical for tests
+          - lll   # tests often require long lines
+          - mnd   # tests are full of magic numbers
+          - maintidx  # tests may be long
           - testpackage
-          - unused
+          - unused  # very annoying false positive: https://github.com/golangci/golangci-lint/issues/791
         path: _test\.go
     paths:
       - third_party$
       - builtin$
       - examples$
+      - packaging
 formatters:
   enable:
     - gofmt
@@ -58,3 +69,4 @@ formatters:
       - third_party$
       - builtin$
       - examples$
+      - packaging

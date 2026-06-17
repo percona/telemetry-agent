@@ -34,6 +34,7 @@ func TestInitConfig(t *testing.T) { //nolint:paralleltest
 			name: "all_default_values",
 			setupTestData: func(t *testing.T) {
 				t.Helper()
+
 				os.Args = []string{""}
 			},
 			expectedConfig: Config{
@@ -64,6 +65,7 @@ func TestInitConfig(t *testing.T) { //nolint:paralleltest
 				t.Helper()
 
 				os.Args = []string{""}
+
 				t.Setenv(telemetryRootPath, "/tmp/percona")
 				t.Setenv(telemetryCheckInterval, strconv.Itoa(telemetryCheckIntervalDefault*2))
 				t.Setenv(telemetryResendInterval, strconv.Itoa(telemetryResendIntervalDefault*3))
@@ -98,6 +100,7 @@ func TestInitConfig(t *testing.T) { //nolint:paralleltest
 				t.Helper()
 
 				os.Args = []string{""}
+
 				t.Setenv(telemetryCheckInterval, strconv.Itoa(telemetryCheckIntervalDefault*2))
 				t.Setenv(telemetryResendInterval, strconv.Itoa(telemetryResendIntervalDefault*3))
 				t.Setenv(telemetryURL, "https://check-dev.percona.com/v1/telemetry/GenericReport2")
@@ -129,6 +132,7 @@ func TestInitConfig(t *testing.T) { //nolint:paralleltest
 	for _, tt := range testCases { //nolint:paralleltest
 		t.Run(tt.name, func(t *testing.T) {
 			tt.setupTestData(t)
+
 			gotConfig := InitConfig()
 			require.Equal(t, tt.expectedConfig, gotConfig)
 		})

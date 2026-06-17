@@ -16,6 +16,7 @@ func queryRhelPackage(ctx context.Context, localOS, packageNamePattern string) (
 	if err != nil {
 		return nil, err
 	}
+
 	pkgMngCmd = append(pkgMngCmd, packageNamePattern)
 	zap.L().Sugar().Debugw("executing command", zap.String("cmd", strings.Join(pkgMngCmd, " ")))
 
@@ -24,11 +25,14 @@ func queryRhelPackage(ctx context.Context, localOS, packageNamePattern string) (
 
 	cmd := exec.CommandContext(cmdCtx, pkgMngCmd[0], pkgMngCmd[1:]...) // #nosec G204
 	outputB, err := cmd.CombinedOutput()
+
 	return parseRhelPackageOutput(outputB, err, isPerconaPackage(packageNamePattern))
 }
 
 func getRhelPackageManagerCmd(localOS string) ([]string, error) {
 	const newQueryFormat = "'%{name}|%{version}|%{release}|%{from_repo}'"
+
+	//nolint:goconst
 	newPkgMngCmds := [][]string{
 		{"repoquery", "--qf", newQueryFormat, "--installed"},
 		{"yum", "repoquery", "--qf", newQueryFormat, "--installed"},
@@ -37,6 +41,7 @@ func getRhelPackageManagerCmd(localOS string) ([]string, error) {
 	oldPkgMngCmds := [][]string{
 		{"repoquery", "--qf", "'%{name}|%{version}|%{release}|%{ui_from_repo}'", "--installed"},
 	}
+
 	var pkgMngCmds [][]string
 
 	switch localOSLower := strings.ToLower(localOS); {
@@ -50,11 +55,14 @@ func getRhelPackageManagerCmd(localOS string) ([]string, error) {
 	default:
 		pkgMngCmds = newPkgMngCmds
 	}
+
 	for _, pkgMngCmd := range pkgMngCmds {
-		if _, err := exec.LookPath(pkgMngCmd[0]); err == nil {
+		_, err := exec.LookPath(pkgMngCmd[0])
+		if err == nil {
 			return pkgMngCmd, nil
 		}
 	}
+
 	return nil, errPackageManagerNotFound
 }
 
@@ -69,6 +77,7 @@ func parseRhelPackageOutput(packageOutput []byte, rpmErr error, isPerconaPackage
 	scanner := bufio.NewScanner(bytes.NewReader(packageOutput))
 
 	toReturn := make([]*Package, 0, 1)
+
 	for scanner.Scan() {
 		line := strings.Trim(scanner.Text(), " '\t")
 		if len(line) == 0 {
@@ -95,7 +104,8 @@ func parseRhelPackageOutput(packageOutput []byte, rpmErr error, isPerconaPackage
 		})
 	}
 
-	if err := scanner.Err(); err != nil {
+	err := scanner.Err()
+	if err != nil {
 		zap.L().Sugar().Warnw("failed to read output from rhel package manager", zap.Error(err))
 		return nil, err
 	}
@@ -104,6 +114,7 @@ func parseRhelPackageOutput(packageOutput []byte, rpmErr error, isPerconaPackage
 		// no installed packaged found matching pkgNamePattern
 		return nil, errPackageNotFound
 	}
+
 	return toReturn, nil
 }
 
@@ -131,6 +142,7 @@ func parseRhelPackageVersion(packageVersion, packageRelease string, isPerconaPac
 		// need to join them with '-' separator.
 		return fmt.Sprintf("%s-%s", packageVersion, packageRelease)
 	}
+
 	return packageVersion
 }
 
@@ -139,7 +151,6 @@ func parseRhelPackageRegistry(packageRepository string, isPerconaPackage bool) P
 	// Example:
 	// packageRepository = 'pt-release-x86_64', 'noarch', ''
 	// Note: repository value may be empty!
-
 	var toReturn PackageRepository
 	if len(packageRepository) == 0 {
 		return toReturn
@@ -175,6 +186,7 @@ func parseRhelPackageRegistry(packageRepository string, isPerconaPackage bool) P
 		toReturn.Name = packageRepository[0:pos]
 		toReturn.Component = packageRepository[pos+1:]
 	}
+
 	return toReturn
 }
 

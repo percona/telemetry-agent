@@ -18,6 +18,7 @@ package metrics
 import (
 	"context"
 	"errors"
+	"slices"
 	"strings"
 	"time"
 
@@ -25,7 +26,10 @@ import (
 )
 
 const (
-	pkgResultTimeout    = 30 * time.Second
+	pkgResultTimeout = 30 * time.Second
+)
+
+const (
 	distroFamilyUnknown = iota
 	distroFamilyRhel
 	distroFamilyDebian
@@ -64,16 +68,19 @@ func ScrapeInstalledPackages(ctx context.Context) []*Package {
 	localOS := getOSInfo()
 
 	toReturn := make([]*Package, 0, 1)
+
 	var pkgFunc queryPkgFunc
 
 	distroFamily := getDistroFamily(localOS)
 	switch distroFamily {
 	case distroFamilyDebian:
 		pkgFunc = queryDebianPackage
+
 		pkgList = append(pkgList, getDebianPerconaPackages()...)
 		pkgList = append(pkgList, getDebianExternalPackages()...)
 	case distroFamilyRhel:
 		pkgFunc = queryRhelPackage
+
 		pkgList = append(pkgList, getRhelExternalPackages()...)
 	default:
 		zap.L().Sugar().Warnw("unsupported package system", zap.String("OS", localOS))
@@ -87,6 +94,7 @@ func ScrapeInstalledPackages(ctx context.Context) []*Package {
 				// no need to check the rest of package patterns.
 				break
 			}
+
 			if !errors.Is(err, errPackageNotFound) {
 				zap.L().Sugar().Warnw("failed to get package info", zap.Error(err), zap.String("package", pkgNamePattern))
 			}
@@ -96,12 +104,13 @@ func ScrapeInstalledPackages(ctx context.Context) []*Package {
 		// packages are installed
 		toReturn = append(toReturn, pkgL...)
 	}
+
 	return toReturn
 }
 
 func getDistroFamily(name string) int {
 	rhelPrefixes := []string{"el", "centos", "oracle", "rocky", "red hat", "amazon", "alma"}
-	debianPrefixes := []string{"debian", "ubuntu"}
+	debianPrefixes := []string{"debian", "ubuntu"} //nolint:goconst
 
 	nameL := strings.ToLower(name)
 	for _, prefix := range rhelPrefixes {
@@ -115,6 +124,7 @@ func getDistroFamily(name string) int {
 			return distroFamilyDebian
 		}
 	}
+
 	return distroFamilyUnknown
 }
 
@@ -124,12 +134,8 @@ func isPerconaPackage(packageNamePattern string) bool {
 	}
 
 	perconaPkgList := append(getCommonPerconaPackages(), getDebianPerconaPackages()...)
-	for _, pkgPattern := range perconaPkgList {
-		if packageNamePattern == pkgPattern {
-			return true
-		}
-	}
-	return false
+
+	return slices.Contains(perconaPkgList, packageNamePattern)
 }
 
 // getCommonPerconaPackages returns list of Percona package patterns that have the same names both on Debian and RHEL systems.

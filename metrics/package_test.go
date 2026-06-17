@@ -21,7 +21,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var osNames = []struct { //nolint:gochecknoglobals
+var osNames = []struct {
 	name     string
 	osName   string
 	expected int

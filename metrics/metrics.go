@@ -43,15 +43,18 @@ func processMetricsDirectory(path string, productFamily platformReporter.Product
 	l := zap.L().Sugar()
 
 	cleanMetricsDirectoryPath := filepath.Clean(path)
+
 	files, err := os.ReadDir(cleanMetricsDirectoryPath)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			l.Infow("pillar metric directory is absent, skipping", zap.String("directory", cleanMetricsDirectoryPath))
 			return nil, nil
 		}
+
 		l.Errorw("failed to read pillar metric directory",
 			zap.String("directory", cleanMetricsDirectoryPath),
 			zap.Error(err))
+
 		return nil, fmt.Errorf("can't read directory with metric files: %w", err)
 	}
 
@@ -61,6 +64,7 @@ func processMetricsDirectory(path string, productFamily platformReporter.Product
 	}
 
 	toReturn := make([]*File, 0, 1)
+
 	for _, file := range files {
 		fileName := filepath.Join(cleanMetricsDirectoryPath, file.Name())
 		fl := l.With(zap.String("file", fileName))
@@ -72,11 +76,13 @@ func processMetricsDirectory(path string, productFamily platformReporter.Product
 		}
 
 		fl.Debugw("parsing metrics file")
+
 		fileMetrics, err := parseMetricsFile(fileName)
 		if err != nil {
 			fl.Errorw("error during parsing metrics file, skipping", zap.Error(err))
 			continue
 		}
+
 		fileMetrics.ProductFamily = productFamily
 		toReturn = append(toReturn, fileMetrics)
 	}
@@ -84,20 +90,30 @@ func processMetricsDirectory(path string, productFamily platformReporter.Product
 	return toReturn, nil
 }
 
-func parseMetricsFile(path string) (*File, error) { //nolint:cyclop
+func parseMetricsFile(path string) (*File, error) {
 	cleanPath := filepath.Clean(path)
 	l := zap.L().Sugar().With(zap.String("file", cleanPath))
 
-	var file *os.File
-	var err error
-	if file, err = os.Open(cleanPath); err != nil {
+	var (
+		file *os.File
+		err  error
+	)
+
+	file, err = os.Open(cleanPath)
+	if err != nil {
 		l.Errorw("error during opening metrics file", zap.Error(err))
 		return nil, err
 	}
-	defer file.Close() //nolint:errcheck
+	defer func() {
+		fErr := file.Close()
+		if fErr != nil {
+			l.Errorw("failed to close file", zap.Error(err))
+		}
+	}()
 
 	// file has content in JSON format but the structure is not well known beforehand.
 	var tmpMetrics map[string]any
+
 	err = json.NewDecoder(file).Decode(&tmpMetrics)
 	if err != nil {
 		l.Errorw("error during parsing metrics file, skipping", zap.Error(err))
@@ -110,14 +126,17 @@ func parseMetricsFile(path string) (*File, error) { //nolint:cyclop
 		switch v := v.(type) {
 		case string:
 			// handle special case when "true/false" are written as string
-			if vb, err := strconv.ParseBool(v); err == nil {
+			vb, err := strconv.ParseBool(v)
+			if err == nil {
 				if vb {
 					metrics[k] = "1"
 				} else {
 					metrics[k] = "0"
 				}
+
 				continue
 			}
+
 			metrics[k] = v
 		case bool:
 			if v {
@@ -125,6 +144,7 @@ func parseMetricsFile(path string) (*File, error) { //nolint:cyclop
 			} else {
 				metrics[k] = "0"
 			}
+
 			continue
 		default:
 			// the rest of types shall be marshalled back to JSON.
@@ -132,8 +152,10 @@ func parseMetricsFile(path string) (*File, error) { //nolint:cyclop
 			if err != nil {
 				l.Errorw("error during marshalling metric value to JSON, skipping",
 					zap.Any("key", k), zap.Any("value", v), zap.Error(err))
+
 				continue
 			}
+
 			metrics[k] = string(s)
 		}
 	}

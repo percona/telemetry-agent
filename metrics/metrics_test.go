@@ -59,6 +59,7 @@ func TestParseMetricsFile(t *testing.T) {
 			name: "empty_file",
 			setupTestData: func(t *testing.T, tmpDir, metricsFile string) {
 				t.Helper()
+
 				err := os.WriteFile(filepath.Join(tmpDir, metricsFile), []byte(""), metricsFilePermissions)
 				require.NoError(t, err)
 			},
@@ -79,6 +80,7 @@ func TestParseMetricsFile(t *testing.T) {
 			name: "corrupted_file",
 			setupTestData: func(t *testing.T, tmpDir, metricsFile string) {
 				t.Helper()
+
 				fileContent := `{
 "db_instance_id": "1bed5f0d-cc3a-11ee-bd8a-c84bd64e0288",
 "pillar_version": "8.0.35-27-debug",
@@ -104,6 +106,7 @@ func TestParseMetricsFile(t *testing.T) {
 			name: "valid_file",
 			setupTestData: func(t *testing.T, tmpDir, metricsFile string) {
 				t.Helper()
+
 				fileContent := `{
 "db_instance_id": "1bed5f0d-cc3a-11ee-bd8a-c84bd64e0288",
 "pillar_version": "8.0.35-27-debug",
@@ -161,12 +164,7 @@ func TestParseMetricsFile(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			tmpDir, err := os.MkdirTemp("", "test-metrics")
-			require.NoError(t, err)
-			t.Cleanup(func() {
-				_ = os.RemoveAll(tmpDir)
-			})
-
+			tmpDir := t.TempDir()
 			currTime := time.Now()
 			token := uuid.New().String()
 			metricsFile := fmt.Sprintf("%d-%s.json", currTime.Unix(), token)
@@ -179,6 +177,7 @@ func TestParseMetricsFile(t *testing.T) {
 				require.NoError(t, err)
 				require.NotNil(t, f)
 			}
+
 			tt.postCheckTestData(t, tmpDir, metricsFile, f)
 		})
 	}

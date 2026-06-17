@@ -35,10 +35,12 @@ const (
 	perconaTelemetryURLDefault     = "https://check.percona.com/v1/telemetry/GenericReport"
 )
 
-//nolint:gochecknoglobals
 var (
-	Version   string
-	Commit    string
+	// Version holds component version.
+	Version string
+	// Commit holds Git commit hash.
+	Commit string
+	// BuildDate holds component build timestamp.
 	BuildDate string
 )
 
@@ -81,6 +83,7 @@ type Config struct {
 // If some parameters are not defined - default values are used instead.
 func InitConfig() Config {
 	var conf Config
+
 	ctx := kong.Parse(&conf,
 		kong.Name("telemetry-agent"),
 		kong.Description("Percona Telemetry Agent gathers information from running Percona Pillar products, about the host and installed Percona software and sends it to Percona Platform."),
@@ -106,6 +109,7 @@ func InitConfig() Config {
 	if err != nil {
 		ctx.Fatalf("Invalid Percona Platform Telemetry URL: %q", err)
 	}
+
 	if u.Scheme == "" || u.Host == "" {
 		ctx.Fatalf("Invalid Percona Platform Telemetry URL: scheme or host is missed")
 	}
@@ -116,5 +120,6 @@ func InitConfig() Config {
 	conf.Telemetry.PXCMetricsPath = filepath.Join(conf.Telemetry.RootPath, "pxc")
 	conf.Telemetry.PGMetricsPath = filepath.Join(conf.Telemetry.RootPath, "pg")
 	conf.Telemetry.HistoryPath = filepath.Join(conf.Telemetry.RootPath, "history")
+
 	return conf
 }

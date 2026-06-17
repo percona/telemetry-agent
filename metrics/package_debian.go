@@ -28,6 +28,7 @@ func queryDebianPackage(ctx context.Context, _, packageNamePattern string) ([]*P
 
 	cmd := exec.CommandContext(cmdCtx, args[0], args[1:]...) // #nosec G204
 	outputB, err := cmd.CombinedOutput()
+
 	pkgL, err := parseDebianPackageOutput(outputB, err, isPerconaPackage(packageNamePattern))
 	if err != nil {
 		return nil, err
@@ -40,12 +41,14 @@ func queryDebianPackage(ctx context.Context, _, packageNamePattern string) ([]*P
 			// go to next package silently
 			continue
 		}
+
 		pkg.Repository = *pkgRepository
 	}
+
 	return pkgL, nil
 }
 
-func parseDebianPackageOutput(dpkgOutput []byte, dpkgErr error, isPerconaPackage bool) ([]*Package, error) { //nolint:cyclop
+func parseDebianPackageOutput(dpkgOutput []byte, dpkgErr error, isPerconaPackage bool) ([]*Package, error) {
 	if dpkgErr != nil {
 		if strings.Contains(string(dpkgOutput), "no packages found matching") {
 			// package is not installed
@@ -53,11 +56,13 @@ func parseDebianPackageOutput(dpkgOutput []byte, dpkgErr error, isPerconaPackage
 		}
 
 		zap.L().Sugar().Debugw("cmd output", zap.ByteString("output", dpkgOutput))
+
 		return nil, dpkgErr
 	}
 
 	scanner := bufio.NewScanner(bytes.NewReader(dpkgOutput))
 	toReturn := make([]*Package, 0, 1)
+
 	for scanner.Scan() {
 		// trim spaces and single quote chars
 		line := strings.Trim(scanner.Text(), " '")
@@ -103,7 +108,8 @@ func parseDebianPackageOutput(dpkgOutput []byte, dpkgErr error, isPerconaPackage
 		})
 	}
 
-	if err := scanner.Err(); err != nil {
+	err := scanner.Err()
+	if err != nil {
 		zap.L().Sugar().Warnw("failed to read output from dpkg-query", zap.Error(err))
 		return nil, err
 	}
@@ -112,6 +118,7 @@ func parseDebianPackageOutput(dpkgOutput []byte, dpkgErr error, isPerconaPackage
 		// no installed packaged found matching pkgNamePattern
 		return nil, errPackageNotFound
 	}
+
 	return toReturn, nil
 }
 
@@ -137,7 +144,6 @@ func parseDebianPackageVersion(pkgVersion string, isPerconaPackage bool) string 
 	// But Percona packages have differences in [-debian_revision] part:
 	// upstream_version-debian_revision = '8.2.0-1-1.jammy'
 	// here '.jammy' is distribution name.
-
 	if isPerconaPackage {
 		// Percona's package version case.
 		// need to trim distribution name from the end.
@@ -156,6 +162,7 @@ func parseDebianPackageVersion(pkgVersion string, isPerconaPackage bool) string 
 			revision := strings.ReplaceAll(v.Revision(), ".", "-")
 			return fmt.Sprintf("%s-%s", v.Version(), revision)
 		}
+
 		return v.Version()
 	}
 
@@ -164,11 +171,13 @@ func parseDebianPackageVersion(pkgVersion string, isPerconaPackage bool) string 
 	if err != nil {
 		return pkgVersion
 	}
+
 	pkgVersion = v.Version()
 	// need to trim '+dfsg' part if it is present.
 	if pos := strings.Index(pkgVersion, "+dfsg"); pos != -1 {
 		pkgVersion = pkgVersion[0:pos]
 	}
+
 	return pkgVersion
 }
 
@@ -181,10 +190,11 @@ func queryDebianRepository(ctx context.Context, packageName string, isPerconaPac
 
 	cmd := exec.CommandContext(cmdCtx, args[0], args[1:]...) // #nosec G204
 	outputB, err := cmd.CombinedOutput()
+
 	return parseDebianRepositoryOutput(outputB, err, isPerconaPackage)
 }
 
-func parseDebianRepositoryOutput(repoOutput []byte, repoErr error, isPerconaPackage bool) (*PackageRepository, error) { //nolint:cyclop
+func parseDebianRepositoryOutput(repoOutput []byte, repoErr error, isPerconaPackage bool) (*PackageRepository, error) {
 	if repoErr != nil {
 		zap.L().Sugar().Debugw("cmd output", zap.ByteString("output", repoOutput))
 		return nil, repoErr
@@ -222,7 +232,9 @@ func parseDebianRepositoryOutput(repoOutput []byte, repoErr error, isPerconaPack
 			zap.L().Sugar().Warnw("unexpected configured package repository line", zap.String("line", line))
 			return nil, errUnexpectedConfiguredRepoLine
 		}
+
 		priority := tokens[2]
+
 		for scanner.Scan() {
 			line = strings.Trim(scanner.Text(), " '\t")
 			if len(line) == 0 || !strings.HasPrefix(line, priority) {
@@ -233,7 +245,8 @@ func parseDebianRepositoryOutput(repoOutput []byte, repoErr error, isPerconaPack
 		}
 	}
 
-	if err := scanner.Err(); err != nil {
+	err := scanner.Err()
+	if err != nil {
 		zap.L().Sugar().Warnw("failed to read output from apt-cache", zap.Error(err))
 		return nil, err
 	}
@@ -255,20 +268,24 @@ func parseDebianPackageRepositoryLine(repositoryLine string, isPerconaPackage bo
 	}
 
 	repoAddr := repoTokens[1]
+
 	repoURL, err := url.Parse(repoAddr)
 	if err != nil {
 		zap.L().Sugar().Warnw("failed to parse repository url", zap.Error(err), zap.String("url", repoAddr))
 		return nil, err
 	}
+
 	repoName := strings.Split(strings.Trim(repoURL.Path, "/"), "/")[0]
 
 	var repoComponent string
 	if repoBranch := strings.Split(repoTokens[2], "/"); len(repoBranch) == 2 {
 		repoComponent = repoBranch[1]
 	}
+
 	if isPerconaPackage && repoComponent == "main" {
-		repoComponent = "release"
+		repoComponent = "release" //nolint:goconst
 	}
+
 	return &PackageRepository{
 		Name:      repoName,
 		Component: repoComponent,
