@@ -41,6 +41,7 @@ func TestInitConfig(t *testing.T) { //nolint:paralleltest
 				Telemetry: TelemetryOpts{
 					RootPath:               filepath.Join("/usr", "local", "percona", "telemetry"),
 					PSMetricsPath:          filepath.Join("/usr", "local", "percona", "telemetry", "ps"),
+					PBSMetricsPath:         filepath.Join("/usr", "local", "percona", "telemetry", "pbs"),
 					PSMDBMongodMetricsPath: filepath.Join("/usr", "local", "percona", "telemetry", "psmdb"),
 					PSMDBMongosMetricsPath: filepath.Join("/usr", "local", "percona", "telemetry", "psmdbs"),
 					PXCMetricsPath:         filepath.Join("/usr", "local", "percona", "telemetry", "pxc"),
@@ -76,6 +77,7 @@ func TestInitConfig(t *testing.T) { //nolint:paralleltest
 				Telemetry: TelemetryOpts{
 					RootPath:               filepath.Join("/tmp", "percona"),
 					PSMetricsPath:          filepath.Join("/tmp", "percona", "ps"),
+					PBSMetricsPath:         filepath.Join("/tmp", "percona", "pbs"),
 					PSMDBMongodMetricsPath: filepath.Join("/tmp", "percona", "psmdb"),
 					PSMDBMongosMetricsPath: filepath.Join("/tmp", "percona", "psmdbs"),
 					PXCMetricsPath:         filepath.Join("/tmp", "percona", "pxc"),
@@ -109,6 +111,7 @@ func TestInitConfig(t *testing.T) { //nolint:paralleltest
 				Telemetry: TelemetryOpts{
 					RootPath:               filepath.Join("/usr", "local", "percona", "telemetry"),
 					PSMetricsPath:          filepath.Join("/usr", "local", "percona", "telemetry", "ps"),
+					PBSMetricsPath:         filepath.Join("/usr", "local", "percona", "telemetry", "pbs"),
 					PSMDBMongodMetricsPath: filepath.Join("/usr", "local", "percona", "telemetry", "psmdb"),
 					PSMDBMongosMetricsPath: filepath.Join("/usr", "local", "percona", "telemetry", "psmdbs"),
 					PXCMetricsPath:         filepath.Join("/usr", "local", "percona", "telemetry", "pxc"),

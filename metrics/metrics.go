@@ -104,12 +104,12 @@ func parseMetricsFile(path string) (*File, error) {
 		l.Errorw("error during opening metrics file", zap.Error(err))
 		return nil, err
 	}
-	defer func() {
+	defer func(l *zap.SugaredLogger) {
 		fErr := file.Close()
 		if fErr != nil {
 			l.Errorw("failed to close file", zap.Error(fErr))
 		}
-	}()
+	}(l)
 
 	// file has content in JSON format but the structure is not well known beforehand.
 	var tmpMetrics map[string]any

@@ -61,10 +61,11 @@ OPTIONS can be:
   -c  [PERCONA_CONNECT_TIMEOUT]             Default timeout for the curl to establish connection.       [Default: ${PERCONA_CONNECT_TIMEOUT}]
   -t  [PERCONA_SEND_TIMEOUT]                Default timeout for the whole curl command.                 [Default: ${PERCONA_SEND_TIMEOUT}]
 
-Note that -d PERCONA_PRODUCT_FAMILY can be set to any string, but only the following ones will be accepted
+Note that -f PERCONA_PRODUCT_FAMILY can be set to any string, but only the following ones will be accepted
 by Percona Telemetry service (there is no validation of the script side):
 
 PRODUCT_FAMILY_PS
+PRODUCT_FAMILY_PBS
 PRODUCT_FAMILY_PXC
 PRODUCT_FAMILY_PXB
 PRODUCT_FAMILY_PSMDB

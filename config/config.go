@@ -46,8 +46,9 @@ var (
 
 // TelemetryOpts represents the options for configuring telemetry paths on local filesystem.
 type TelemetryOpts struct {
-	RootPath      string `help:"define Percona telemetry root path on local filesystem." env:"PERCONA_TELEMETRY_ROOT_PATH" default:"/usr/local/percona/telemetry"`
-	PSMetricsPath string `kong:"-"`
+	RootPath       string `help:"define Percona telemetry root path on local filesystem." env:"PERCONA_TELEMETRY_ROOT_PATH" default:"/usr/local/percona/telemetry"`
+	PSMetricsPath  string `kong:"-"`
+	PBSMetricsPath string `kong:"-"`
 	// For PSMDB (mongod) component
 	PSMDBMongodMetricsPath string `kong:"-"`
 	// For PSMDB (mongos) component
@@ -115,6 +116,7 @@ func InitConfig() Config {
 	}
 
 	conf.Telemetry.PSMetricsPath = filepath.Join(conf.Telemetry.RootPath, "ps")
+	conf.Telemetry.PBSMetricsPath = filepath.Join(conf.Telemetry.RootPath, "pbs")
 	conf.Telemetry.PSMDBMongodMetricsPath = filepath.Join(conf.Telemetry.RootPath, "psmdb")
 	conf.Telemetry.PSMDBMongosMetricsPath = filepath.Join(conf.Telemetry.RootPath, "psmdbs")
 	conf.Telemetry.PXCMetricsPath = filepath.Join(conf.Telemetry.RootPath, "pxc")

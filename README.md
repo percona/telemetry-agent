@@ -61,10 +61,11 @@ OPTIONS can be:
   -t  [PERCONA_SEND_TIMEOUT]                Default timeout for the whole curl command.                 [Default: 10]
 ```
 
-Note that `-d PERCONA_PRODUCT_FAMILY` can be set to any string, but only the following ones will be accepted
+Note that `-f PERCONA_PRODUCT_FAMILY` can be set to any string, but only the following ones will be accepted
 by Percona Telemetry service (there is no validation of the script side):
 ```
 PRODUCT_FAMILY_PS
+PRODUCT_FAMILY_PBS
 PRODUCT_FAMILY_PXC
 PRODUCT_FAMILY_PXB
 PRODUCT_FAMILY_PSMDB
@@ -131,6 +132,7 @@ Percona stores the Metrics file in one of the following directories on the local
 * PSMDB (mongod) root path -   `${telemetry root path}/psmdb/`
 * PSMDB (mongos) root path - `${telemetry root path}/psmdbs/`
 * PS root path -   `${telemetry root path}/ps/`
+* PBS root path -   `${telemetry root path}/pbs/`
 * PXC root path - `${telemetry root path}/pxc/`
 * PG root path - `${telemetry root path}/pg/`
 

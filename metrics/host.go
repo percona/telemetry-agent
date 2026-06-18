@@ -136,12 +136,12 @@ func getInstanceID(instanceFile string) string {
 	}
 
 	// do not forget to close file.
-	defer func() {
+	defer func(l *zap.SugaredLogger) {
 		fErr := file.Close()
 		if fErr != nil {
 			l.Errorw("failed to close file", zap.Error(fErr))
 		}
-	}()
+	}(l)
 
 	st, err := file.Stat()
 	if err != nil || st.Size() == 0 {
@@ -296,16 +296,20 @@ func parseHardwareInfoOutput(hwOutput []byte, hwErr error) string {
 
 func readOSReleaseFile(fileName string) string {
 	cleanFileName := filepath.Clean(fileName)
+	l := zap.L().Sugar().With(zap.String("file", cleanFileName))
 
 	f, err := os.Open(cleanFileName)
 	if err != nil {
-		zap.L().Sugar().Errorw("failed to open OS file", zap.Error(err), zap.String("file", cleanFileName))
+		l.Errorw("failed to open OS file", zap.Error(err), zap.String("file", cleanFileName))
 		return unknownString
 	}
 
-	defer func() {
-		_ = f.Close()
-	}()
+	defer func(l *zap.SugaredLogger) {
+		fErr := f.Close()
+		if fErr != nil {
+			l.Errorw("failed to close file", zap.Error(fErr))
+		}
+	}(l)
 
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
@@ -320,7 +324,7 @@ func readOSReleaseFile(fileName string) string {
 
 	err = scanner.Err()
 	if err != nil {
-		zap.L().Sugar().Warnw("error reading OS release file", zap.String("file", cleanFileName), zap.Error(err))
+		l.Warnw("error reading OS release file", zap.String("file", cleanFileName), zap.Error(err))
 		return unknownString
 	}
 
@@ -329,16 +333,20 @@ func readOSReleaseFile(fileName string) string {
 
 func readSystemReleaseFile(fileName string) string {
 	cleanFileName := filepath.Clean(fileName)
+	l := zap.L().Sugar().With(zap.String("file", cleanFileName))
 
 	f, err := os.Open(cleanFileName)
 	if err != nil {
-		zap.L().Sugar().Errorw("failed to open system release file", zap.Error(err), zap.String("file", cleanFileName))
+		l.Errorw("failed to open system release file", zap.Error(err), zap.String("file", cleanFileName))
 		return unknownString
 	}
 
-	defer func() {
-		_ = f.Close()
-	}()
+	defer func(l *zap.SugaredLogger) {
+		fErr := f.Close()
+		if fErr != nil {
+			l.Errorw("failed to close file", zap.Error(fErr))
+		}
+	}(l)
 
 	scanner := bufio.NewScanner(f)
 	if scanner.Scan() {
@@ -347,7 +355,7 @@ func readSystemReleaseFile(fileName string) string {
 
 	err = scanner.Err()
 	if err != nil {
-		zap.L().Sugar().Warnw("error reading system release file", zap.String("file", cleanFileName), zap.Error(err))
+		l.Warnw("error reading system release file", zap.String("file", cleanFileName), zap.Error(err))
 		return unknownString
 	}
 
