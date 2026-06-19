@@ -19,7 +19,7 @@ GO_BUILD_LDFLAGS := -X github.com/percona/telemetry-agent/config.Version=${COMPO
 	-X github.com/percona/telemetry-agent/config.BuildDate=${BUILD_TIME} \
 	-X github.com/percona/telemetry-agent/config.Commit=${TELEMETRY_AGENT_RELEASE_FULLCOMMIT} \
 	-extldflags -static
-GOARCH?=amd64
+GOARCH ?= $(shell go env GOARCH)
 
 # --- Tools variables ---------------------------------------------------------------------
 GOLANGCI_LINT_VERSION := v2.12.2 # Version should match specified in CI

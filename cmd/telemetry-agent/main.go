@@ -293,7 +293,6 @@ func main() {
 	}(l)
 
 	l.Infow("values from config:", zap.Any("config", conf))
-	l.Infow("YAKUT", zap.String("str", platformReporter.ProductFamily_PRODUCT_FAMILY_PBS.String()))
 
 	// check that <telemetry root>/history dir exists on filesystem
 	err := createTelemetryDirs(conf.Telemetry.HistoryPath)
