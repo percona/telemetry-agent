@@ -1,3 +1,4 @@
+---
 version: "2"
 issues:
   # Maximum issues count per one linter.
@@ -32,6 +33,8 @@ linters:
           deny:
             - pkg: github.com/pkg/errors
               desc: Use "standard errors" instead
+            - pkg: github.com/gogo/protobuf/proto
+              desc: use "github.com/golang/protobuf/proto" instead
     unparam:
       check-exported: true
     cyclop:

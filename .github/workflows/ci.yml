@@ -19,9 +19,9 @@ permissions:
   pull-requests: write
 
 env:
-  GONOPROXY: 'github.com/percona,github.com/percona-platform'
-  GONOSUMDB: 'github.com/percona,github.com/percona-platform'
-  GOPRIVATE: 'github.com/percona,github.com/percona-platform'
+  GONOPROXY: 'github.com/percona'
+  GONOSUMDB: 'github.com/percona'
+  GOPRIVATE: 'github.com/percona'
 
 jobs:
   test:
@@ -50,7 +50,6 @@ jobs:
 
       - name: Run tests
         run: |
-          go clean -testcache
           make test
 
       - name: Run debug commands on failure

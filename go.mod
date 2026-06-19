@@ -1,15 +1,13 @@
 module github.com/percona/telemetry-agent
 
-go 1.26.0
-
-toolchain go1.26.4
+go 1.26.4
 
 require (
 	github.com/alecthomas/kong v1.15.0
 	github.com/go-resty/resty/v2 v2.17.2
 	github.com/google/uuid v1.6.0
 	github.com/knqyf263/go-deb-version v0.0.0-20241115132648-6f4aee6ccd23
-	github.com/percona/platform v0.0.0-20260617103246-376121562906
+	github.com/percona/platform v0.0.0-20260619045817-5e3e79e7aa9d
 	github.com/stretchr/testify v1.11.1
 	go.uber.org/zap v1.28.0
 	google.golang.org/protobuf v1.36.11

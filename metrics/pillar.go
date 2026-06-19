@@ -25,6 +25,12 @@ func ProcessPSMetrics(path string) ([]*File, error) {
 	return processMetricsDirectory(path, platformReporter.ProductFamily_PRODUCT_FAMILY_PS)
 }
 
+// ProcessPBSMetrics processes PBS metrics and returns slice of *File.
+// Each File corresponds to a separate metrics file.
+func ProcessPBSMetrics(path string) ([]*File, error) {
+	return processMetricsDirectory(path, platformReporter.ProductFamily_PRODUCT_FAMILY_PBS)
+}
+
 // ProcessPXCMetrics processes PXC metrics and returns slice of *File.
 // Each File corresponds to a separate metrics file.
 func ProcessPXCMetrics(path string) ([]*File, error) {

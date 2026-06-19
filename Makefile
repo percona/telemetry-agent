@@ -4,9 +4,9 @@ BIN_DIR := $(CURDIR)/bin
 .PHONY: help clean init build format check test test-cover test-crosscover run prepare-pr
 
 # --- Go-related variables ----------------------------------------------------------------
-GOPRIVATE := github.com/percona,github.com/percona-platform
-GONOSUMDB := github.com/percona,github.com/percona-platform
-GONOPROXY := github.com/percona,github.com/percona-platform
+export GOPRIVATE := github.com/percona
+export GONOSUMDB := github.com/percona
+export GONOPROXY := github.com/percona
 
 # --- Git variables ------------------------------------------------------------------------
 COMPONENT_VERSION := $(shell git describe --abbrev=0 --always --tags)
@@ -19,7 +19,7 @@ GO_BUILD_LDFLAGS := -X github.com/percona/telemetry-agent/config.Version=${COMPO
 	-X github.com/percona/telemetry-agent/config.BuildDate=${BUILD_TIME} \
 	-X github.com/percona/telemetry-agent/config.Commit=${TELEMETRY_AGENT_RELEASE_FULLCOMMIT} \
 	-extldflags -static
-GOARCH?=amd64
+GOARCH ?= $(shell go env GOARCH)
 
 # --- Tools variables ---------------------------------------------------------------------
 GOLANGCI_LINT_VERSION := v2.12.2 # Version should match specified in CI

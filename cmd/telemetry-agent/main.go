@@ -33,11 +33,10 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	platformClient "github.com/percona/telemetry-agent/platform"
-
 	"github.com/percona/telemetry-agent/config"
 	"github.com/percona/telemetry-agent/logger"
 	"github.com/percona/telemetry-agent/metrics"
+	platformClient "github.com/percona/telemetry-agent/platform"
 	"github.com/percona/telemetry-agent/utils"
 )
 
@@ -104,6 +103,15 @@ func processPillarsMetrics(c config.Config) []*metrics.File {
 		pillarMetrics = append(pillarMetrics, pMetrics...)
 	}
 
+	l.Infow("processing PBS metrics", zap.String("directory", c.Telemetry.PBSMetricsPath))
+
+	pMetrics, err = metrics.ProcessPBSMetrics(c.Telemetry.PBSMetricsPath)
+	if err != nil {
+		l.Warnw("failed to process PBS metrics", zap.Error(err))
+	} else {
+		pillarMetrics = append(pillarMetrics, pMetrics...)
+	}
+
 	l.Infow("processing PXC metrics", zap.String("directory", c.Telemetry.PXCMetricsPath))
 
 	pMetrics, err = metrics.ProcessPXCMetrics(c.Telemetry.PXCMetricsPath)
@@ -162,7 +170,8 @@ func processMetrics(ctx context.Context, c config.Config, platformClient *platfo
 
 	l.Info("scraping installed Percona packages")
 
-	if installedPackages := metrics.ScrapeInstalledPackages(ctx); len(installedPackages) != 0 {
+	installedPackages := metrics.ScrapeInstalledPackages(ctx)
+	if len(installedPackages) != 0 {
 		// add info about installed packages to host metrics.
 		jsonData, err := json.Marshal(installedPackages)
 		if err != nil {
@@ -325,7 +334,7 @@ func main() {
 
 					l.Infow("cleaning up history metric files", zap.String("directory", conf.Telemetry.HistoryPath))
 
-					err := metrics.CleanupMetricsHistory(conf.Telemetry.HistoryPath, conf.Telemetry.HistoryKeepInterval)
+					err = metrics.CleanupMetricsHistory(conf.Telemetry.HistoryPath, conf.Telemetry.HistoryKeepInterval)
 					if err != nil {
 						l.Errorw("error during history metrics directory cleanup", zap.Error(err))
 						// not critical error, keep processing
