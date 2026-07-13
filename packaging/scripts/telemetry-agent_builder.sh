@@ -154,11 +154,18 @@ install_golang() {
     elif [ x"$ARCH" = "xaarch64" ]; then
       GO_ARCH="arm64"
     fi
-    wget https://golang.org/dl/go1.26.4.linux-${GO_ARCH}.tar.gz -O /tmp/golang1.26.4.tar.gz
-    tar --transform=s,go,go1.26.4, -zxf /tmp/golang1.26.4.tar.gz
+    # Parse Go version from go.mod
+    GO_MOD="$(cd "$(dirname "$0")/../.." && pwd)/go.mod"
+    GO_VERSION=$(grep '^go ' "${GO_MOD}" | awk '{print $2}')
+    if [ -z "$GO_VERSION" ]; then
+        echo "Failed to parse Go version from ${GO_MOD}"
+        exit 1
+    fi
+    wget https://golang.org/dl/go${GO_VERSION}.linux-${GO_ARCH}.tar.gz -O /tmp/golang${GO_VERSION}.tar.gz
+    tar --transform=s,go,go${GO_VERSION}, -zxf /tmp/golang${GO_VERSION}.tar.gz
     rm -rf /usr/local/go*
-    mv go1.26.4 /usr/local/
-    ln -s /usr/local/go1.26.4 /usr/local/go
+    mv go${GO_VERSION} /usr/local/
+    ln -s /usr/local/go${GO_VERSION} /usr/local/go
 }
 
 install_deps() {
