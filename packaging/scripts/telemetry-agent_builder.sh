@@ -45,7 +45,7 @@ parse_arguments() {
         --build_rpm=*) RPM="$val" ;;
         --build_deb=*) DEB="$val" ;;
         --get_sources=*) SOURCE="$val" ;;
-        --branch=*) BRANCH="$val" ;;
+        --branch=*) GIT_BRANCH="$val" ;;
         --repo=*) REPO="$val" ;;
         --version=*) VERSION="$val" ;;
         --install_deps=*) INSTALL="$val" ;;
@@ -148,23 +148,75 @@ get_system() {
     return
 }
 
+get_go_version() {
+    GO_MOD_URL="$(echo "$REPO" | sed -e 's|\.git$||' -e 's|github.com|raw.githubusercontent.com|')/${BRANCH}/go.mod"
+    GO_MOD_TMP="/tmp/telemetry-agent-go.mod"
+    if ! wget -q -O "${GO_MOD_TMP}" "${GO_MOD_URL}"; then
+        echo "Failed to download go.mod from ${GO_MOD_URL}"
+        exit 1
+    fi
+    grep '^go ' "${GO_MOD_TMP}" | awk '{print $2}'
+}
+
+is_resolute() {
+    [ "x${DEBIAN:-$OS_NAME}" = "xresolute" ]
+}
+
+# GNU tar 1.35+ uses openat2, which returns ENOSYS in Jenkins nspawn/chroot
+# on Ubuntu Resolute. Use python3 for extraction there only.
+extract_tar_gz() {
+    archive="$1"
+    if is_resolute; then
+        python3 -c "import tarfile; tarfile.open('${archive}').extractall('.')"
+    else
+        tar zxf "${archive}"
+    fi
+}
+
+dpkg_source_extract() {
+    dsc="$1"
+    if is_resolute; then
+        # .dsc lists the same .tar.xz under Files/Checksums-* sections; take one name
+        tarxz=$(grep '\.tar\.xz$' "${dsc}" | awk '{print $NF}' | head -n1)
+        if [ -z "${tarxz}" ] || [ ! -f "${tarxz}" ]; then
+            echo "Failed to find source tarball for ${dsc}"
+            exit 1
+        fi
+        sourcedir=$(grep '^Source:' "${dsc}" | awk '{print $2}')-$(grep '^Version:' "${dsc}" | awk '{print $2}')
+        rm -rf "${sourcedir}"
+        python3 -c "import tarfile; tarfile.open('${tarxz}', 'r:xz').extractall('.')"
+    else
+        dpkg-source -x "${dsc}"
+    fi
+}
+
 install_golang() {
     if [ x"$ARCH" = "xx86_64" ]; then
       GO_ARCH="amd64"
     elif [ x"$ARCH" = "xaarch64" ]; then
       GO_ARCH="arm64"
     fi
-    # Parse Go version from go.mod
-    GO_MOD="$(cd "$(dirname "$0")/../.." && pwd)/go.mod"
-    GO_VERSION=$(grep '^go ' "${GO_MOD}" | awk '{print $2}')
+    GO_VERSION=$(get_go_version)
     if [ -z "$GO_VERSION" ]; then
-        echo "Failed to parse Go version from ${GO_MOD}"
+        echo "Failed to parse Go version from go.mod"
         exit 1
     fi
+    echo "Installing Go ${GO_VERSION}"
     wget https://golang.org/dl/go${GO_VERSION}.linux-${GO_ARCH}.tar.gz -O /tmp/golang${GO_VERSION}.tar.gz
-    tar --transform=s,go,go${GO_VERSION}, -zxf /tmp/golang${GO_VERSION}.tar.gz
-    rm -rf /usr/local/go*
-    mv go${GO_VERSION} /usr/local/
+
+    # Ubuntu Resolute's GNU tar uses openat2, which returns ENOSYS in Jenkins
+    # nspawn/chroot. Use python only there; keep tar --transform elsewhere.
+    if is_resolute; then
+        rm -rf /tmp/go /tmp/go${GO_VERSION}
+        python3 -c "import tarfile; tarfile.open('/tmp/golang${GO_VERSION}.tar.gz').extractall('/tmp')"
+        mv /tmp/go /tmp/go${GO_VERSION}
+        rm -rf /usr/local/go*
+        mv /tmp/go${GO_VERSION} /usr/local/
+    else
+        tar --transform=s,go,go${GO_VERSION}, -zxf /tmp/golang${GO_VERSION}.tar.gz
+        rm -rf /usr/local/go*
+        mv go${GO_VERSION} /usr/local/
+    fi
     ln -s /usr/local/go${GO_VERSION} /usr/local/go
 }
 
@@ -196,6 +248,10 @@ install_deps() {
         export DEBIAN=$(lsb_release -sc)
         export ARCH=$(echo $(uname -m) | sed -e 's:i686:i386:g')
         INSTALL_LIST="wget devscripts debhelper debconf pkg-config curl make golang git"
+        # python3 needed only on Resolute (GNU tar openat2 ENOSYS workaround)
+        if is_resolute; then
+            INSTALL_LIST="${INSTALL_LIST} python3"
+        fi
         until DEBIAN_FRONTEND=noninteractive apt-get -y install ${INSTALL_LIST}; do
             sleep 1
             echo "waiting"
@@ -338,7 +394,7 @@ build_source_deb() {
     TARFILE=$(basename $(find . -name 'percona-telemetry-agent*.tar.gz' | sort | tail -n1))
     DEBIAN=$(lsb_release -sc)
     ARCH=$(echo $(uname -m) | sed -e 's:i686:i386:g')
-    tar zxf ${TARFILE}
+    extract_tar_gz ${TARFILE}
     BUILDDIR=${TARFILE%.tar.gz}
     #
     rm -fr ${BUILDDIR}/debian
@@ -392,7 +448,7 @@ build_deb() {
     #
     DSC=$(basename $(find . -name '*.dsc' | sort | tail -n1))
     #
-    dpkg-source -x ${DSC}
+    dpkg_source_extract ${DSC}
     #
     cd ${PRODUCT}-${VERSION}
     source VERSION
@@ -430,7 +486,7 @@ INSTALL=0
 VERSION="0.2"
 RELEASE="1"
 REVISION=0
-BRANCH="phase-0"
+BRANCH="main"
 REPO="https://github.com/percona/telemetry-agent.git"
 PRODUCT=percona-telemetry-agent
 parse_arguments PICK-ARGS-FROM-ARGV "$@"
