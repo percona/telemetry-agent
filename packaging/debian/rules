@@ -37,9 +37,9 @@ override_dh_auto_build:
 	mkdir -p build/src/github.com/percona/percona-telemetry-agent
 	find . -mindepth 1 -maxdepth 1 -not -name build -exec cp -r {} build/src/github.com/percona/percona-telemetry-agent/ \;
 ifeq ($(DEB_BUILD_ARCH),arm64)
-	cd build/src/github.com/percona/percona-telemetry-agent/ && env GOARCH=arm64 make build
+	cd build/src/github.com/percona/percona-telemetry-agent/ && env GOARCH=arm64 make build COMPONENT_VERSION=$(COMPONENT_VERSION) TELEMETRY_AGENT_RELEASE_FULLCOMMIT=$(TELEMETRY_AGENT_RELEASE_FULLCOMMIT)
 else
-	cd build/src/github.com/percona/percona-telemetry-agent/ && env GOARCH=amd64 make build
+	cd build/src/github.com/percona/percona-telemetry-agent/ && env GOARCH=amd64 make build COMPONENT_VERSION=$(COMPONENT_VERSION) TELEMETRY_AGENT_RELEASE_FULLCOMMIT=$(TELEMETRY_AGENT_RELEASE_FULLCOMMIT)
 endif
 	touch $@
 
