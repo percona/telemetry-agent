@@ -73,8 +73,8 @@ func TestWriteMetricsToHistory(t *testing.T) {
 				t.Helper()
 				writeTempFiles(t, tmpDir,
 					fmt.Sprintf("%d-%s.json", currTime.Unix(), token),
-					fmt.Sprintf("%d-%s.json", (currTime.Add(-10*time.Minute)).Unix(), token),
-					fmt.Sprintf("%d-%s.json", (currTime.Add(-20*time.Minute)).Unix(), token))
+					fmt.Sprintf("%d-%s.json", currTime.Add(-10*time.Minute).Unix(), token),
+					fmt.Sprintf("%d-%s.json", currTime.Add(-20*time.Minute).Unix(), token))
 			},
 			postCheckTestData: func(t *testing.T, tmpDir, historyFile, token string, currTime time.Time, _ *platformReporter.ReportRequest) {
 				t.Helper()
@@ -83,8 +83,8 @@ func TestWriteMetricsToHistory(t *testing.T) {
 				// all these files shall be kept in directory
 				checkFilesExist(t, tmpDir,
 					fmt.Sprintf("%d-%s.json", currTime.Unix(), token),
-					fmt.Sprintf("%d-%s.json", (currTime.Add(-10*time.Minute)).Unix(), token),
-					fmt.Sprintf("%d-%s.json", (currTime.Add(-20*time.Minute)).Unix(), token))
+					fmt.Sprintf("%d-%s.json", currTime.Add(-10*time.Minute).Unix(), token),
+					fmt.Sprintf("%d-%s.json", currTime.Add(-20*time.Minute).Unix(), token))
 				// history file shall not be created
 				checkFilesAbsent(t, tmpDir, historyFile)
 			},
@@ -110,8 +110,8 @@ func TestWriteMetricsToHistory(t *testing.T) {
 				t.Helper()
 				writeTempFiles(t, tmpDir,
 					fmt.Sprintf("%d-%s.json", currTime.Unix(), token),
-					fmt.Sprintf("%d-%s.json", (currTime.Add(-10*time.Minute)).Unix(), token),
-					fmt.Sprintf("%d-%s.json", (currTime.Add(-20*time.Minute)).Unix(), token))
+					fmt.Sprintf("%d-%s.json", currTime.Add(-10*time.Minute).Unix(), token),
+					fmt.Sprintf("%d-%s.json", currTime.Add(-20*time.Minute).Unix(), token))
 			},
 			postCheckTestData: func(t *testing.T, tmpDir, historyFile, token string, currTime time.Time, _ *platformReporter.ReportRequest) {
 				t.Helper()
@@ -120,8 +120,8 @@ func TestWriteMetricsToHistory(t *testing.T) {
 				// all these files shall be kept in directory
 				checkFilesExist(t, tmpDir,
 					fmt.Sprintf("%d-%s.json", currTime.Unix(), token),
-					fmt.Sprintf("%d-%s.json", (currTime.Add(-10*time.Minute)).Unix(), token),
-					fmt.Sprintf("%d-%s.json", (currTime.Add(-20*time.Minute)).Unix(), token))
+					fmt.Sprintf("%d-%s.json", currTime.Add(-10*time.Minute).Unix(), token),
+					fmt.Sprintf("%d-%s.json", currTime.Add(-20*time.Minute).Unix(), token))
 				// history file shall not be created
 				checkFilesAbsent(t, tmpDir, historyFile)
 			},
@@ -161,8 +161,8 @@ func TestWriteMetricsToHistory(t *testing.T) {
 				t.Helper()
 				writeTempFiles(t, tmpDir,
 					fmt.Sprintf("%d-%s.json", currTime.Unix(), token),
-					fmt.Sprintf("%d-%s.json", (currTime.Add(-10*time.Minute)).Unix(), token),
-					fmt.Sprintf("%d-%s.json", (currTime.Add(-20*time.Minute)).Unix(), token))
+					fmt.Sprintf("%d-%s.json", currTime.Add(-10*time.Minute).Unix(), token),
+					fmt.Sprintf("%d-%s.json", currTime.Add(-20*time.Minute).Unix(), token))
 			},
 			postCheckTestData: func(t *testing.T, tmpDir, historyFile, token string, currTime time.Time, req *platformReporter.ReportRequest) {
 				t.Helper()
@@ -172,8 +172,8 @@ func TestWriteMetricsToHistory(t *testing.T) {
 				// all these files shall be kept in directory
 				checkFilesExist(t, tmpDir,
 					fmt.Sprintf("%d-%s.json", currTime.Unix(), token),
-					fmt.Sprintf("%d-%s.json", (currTime.Add(-10*time.Minute)).Unix(), token),
-					fmt.Sprintf("%d-%s.json", (currTime.Add(-20*time.Minute)).Unix(), token),
+					fmt.Sprintf("%d-%s.json", currTime.Add(-10*time.Minute).Unix(), token),
+					fmt.Sprintf("%d-%s.json", currTime.Add(-20*time.Minute).Unix(), token),
 					historyFile)
 
 				// Verify the file was written successfully.
@@ -232,8 +232,8 @@ func TestCleanupMetricsHistory(t *testing.T) {
 				t.Helper()
 				writeTempFiles(t, tmpDir,
 					fmt.Sprintf("%d-%s.json", currTime.Unix(), token),
-					fmt.Sprintf("%d-%s.json", (currTime.Add(-10*time.Minute)).Unix(), token),
-					fmt.Sprintf("%d-%s.json", (currTime.Add(-20*time.Minute)).Unix(), token))
+					fmt.Sprintf("%d-%s.json", currTime.Add(-10*time.Minute).Unix(), token),
+					fmt.Sprintf("%d-%s.json", currTime.Add(-20*time.Minute).Unix(), token))
 			},
 			postCheckTestData: func(t *testing.T, tmpDir string) {
 				t.Helper()
@@ -241,8 +241,8 @@ func TestCleanupMetricsHistory(t *testing.T) {
 				checkDirectoryContentCount(t, tmpDir, 3)
 				checkFilesExist(t, tmpDir,
 					fmt.Sprintf("%d-%s.json", currTime.Unix(), token),
-					fmt.Sprintf("%d-%s.json", (currTime.Add(-10*time.Minute)).Unix(), token),
-					fmt.Sprintf("%d-%s.json", (currTime.Add(-20*time.Minute)).Unix(), token))
+					fmt.Sprintf("%d-%s.json", currTime.Add(-10*time.Minute).Unix(), token),
+					fmt.Sprintf("%d-%s.json", currTime.Add(-20*time.Minute).Unix(), token))
 			},
 			keepInterval: 7200,
 			wantErr:      false,
@@ -253,8 +253,8 @@ func TestCleanupMetricsHistory(t *testing.T) {
 				t.Helper()
 				writeTempFiles(t, tmpDir,
 					fmt.Sprintf("%d-%s.json", currTime.Unix(), token),
-					fmt.Sprintf("%d-%s.json", (currTime.Add(-2*time.Hour)).Unix(), token),
-					fmt.Sprintf("%d-%s.json", (currTime.Add(-24*time.Hour)).Unix(), token))
+					fmt.Sprintf("%d-%s.json", currTime.Add(-2*time.Hour).Unix(), token),
+					fmt.Sprintf("%d-%s.json", currTime.Add(-24*time.Hour).Unix(), token))
 			},
 			postCheckTestData: func(t *testing.T, tmpDir string) {
 				t.Helper()
@@ -263,8 +263,8 @@ func TestCleanupMetricsHistory(t *testing.T) {
 				checkFilesExist(t, tmpDir, fmt.Sprintf("%d-%s.json", currTime.Unix(), token))
 				// all these files shall be removed from directory
 				checkFilesAbsent(t, tmpDir,
-					fmt.Sprintf("%d-%s.json", (currTime.Add(-2*time.Hour)).Unix(), token),
-					fmt.Sprintf("%d-%s.json", (currTime.Add(-24*time.Hour)).Unix(), token))
+					fmt.Sprintf("%d-%s.json", currTime.Add(-2*time.Hour).Unix(), token),
+					fmt.Sprintf("%d-%s.json", currTime.Add(-24*time.Hour).Unix(), token))
 			},
 			keepInterval: 3600,
 			wantErr:      false,
