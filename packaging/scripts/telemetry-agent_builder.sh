@@ -240,6 +240,15 @@ install_deps() {
         yum -y install rpm-build make rpmdevtools golang
         install_golang
     else
+        # Debian Bullseye is EOL; its packages moved to archive.debian.org
+        if grep -q '^VERSION_CODENAME=bullseye' /etc/os-release 2>/dev/null; then
+            for f in /etc/apt/sources.list /etc/apt/sources.list.d/*.list; do
+                [ -f "$f" ] || continue
+                sed -i -e 's|deb.debian.org|archive.debian.org|g' \
+                       -e 's|security.debian.org|archive.debian.org|g' "$f"
+            done
+            echo 'Acquire::Check-Valid-Until "false";' > /etc/apt/apt.conf.d/99archive
+        fi
         until apt-get update; do
             sleep 1
             echo "waiting"
